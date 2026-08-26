@@ -1,0 +1,123 @@
+:root {
+  --shell: #59634a;
+  --shell-dark: #252b20;
+  --shell-light: #7d8965;
+
+  --screen-dark: #0f380f;
+  --screen-mid: #306230;
+  --screen-light: #8bac0f;
+  --screen-bright: #9bbc0f;
+
+  --ink: #071507;
+  --border: #172411;
+
+  --pixel: "Press Start 2P", monospace;
+  --terminal: "VT323", monospace;
+}
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  padding: 20px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      #536149 0%,
+      #252c22 55%,
+      #090c09 100%
+    );
+
+  color: var(--screen-light);
+
+  font-family: var(--pixel);
+}
+
+.console {
+  width: 100%;
+  max-width: 1150px;
+  margin: auto;
+
+  padding: 20px;
+
+  background:
+    linear-gradient(
+      145deg,
+      var(--shell-light),
+      var(--shell) 45%,
+      #353c2b
+    );
+
+  border: 7px solid var(--shell-dark);
+  border-radius: 24px;
+
+  box-shadow:
+    0 20px 50px rgba(0,0,0,.75),
+    inset 0 0 0 3px #a0aa82,
+    inset 0 0 0 7px #303727;
+}
+
+.topbar {
+  position: relative;
+
+  min-height: 55px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 5px;
+
+  border-bottom: 4px solid var(--border);
+
+  color: var(--screen-dark);
+}
+
+.logo {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+
+  font-size: clamp(12px, 2.5vw, 22px);
+
+  letter-spacing: 2px;
+
+  white-space: nowrap;
+
+  text-shadow: 2px 2px 0 #a9b879;
+}
+
+.battery,
+.power {
+  font-size: 8px;
+}
+
+.battery-dot {
+  display: inline-block;
+
+  width: 9px;
+  height: 9px;
+
+  margin-right: 5px;
+
+  background: var(--screen-dark);
+
+  border-radius: 50%;
+}
+
+.screen {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr) 210px;
+
+  gap
+
