@@ -163,8 +163,8 @@ loadButton.addEventListener(
                 await KokoroTTS.from_pretrained(
                     MODEL,
                     {
-                        dtype: "q8",
-                        device: "wasm"
+                        dtype: "fp32",
+                        device: "webgpu"
                     }
                 );
 
