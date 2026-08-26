@@ -9,7 +9,258 @@ box-sizing: border-box;
 
 --parchment: #e7d49b;
 --parchment-light: #f4e6b9;
---parchment-dark: #b89c5a;
+--parchment-dark:/* =========================================================
+   MOBILE / PHONE LAYOUT
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  html,
+  body {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  .console {
+    width: calc(100% - 20px);
+    max-width: none;
+    margin: 10px auto;
+    padding: 12px;
+    border-width: 3px;
+    border-radius: 12px;
+  }
+
+  /* HEADER */
+
+  .topbar {
+    padding: 8px 4px;
+    margin-bottom: 10px;
+  }
+
+  .logo {
+    font-size: clamp(22px, 7vw, 34px);
+    text-align: center;
+    line-height: 1;
+  }
+
+  .battery {
+    font-size: 11px;
+  }
+
+  /* MAIN DISPLAY */
+
+  .display,
+  .main-display,
+  .screen {
+    width: 100%;
+    min-height: 180px;
+    height: auto;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  /* ANY LARGE PANELS */
+
+  .panel,
+  .voice-panel,
+  .speed-panel,
+  .status-panel,
+  .inventory-panel,
+  .control-panel {
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    margin: 10px 0;
+    padding: 14px;
+    box-sizing: border-box;
+  }
+
+  /* PANEL HEADINGS */
+
+  .panel-title,
+  .section-title {
+    font-size: 18px;
+    margin: 4px 0 14px;
+  }
+
+  /* VOICE SELECT */
+
+  select,
+  .dash-select,
+  #voiceSelect {
+    width: 100%;
+    max-width: 100%;
+    min-height: 48px;
+    font-size: 16px;
+    padding: 8px 12px;
+  }
+
+  /* SPEED */
+
+  .panel-row {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  #rateSlider {
+    width: 100%;
+    margin: 10px 0;
+  }
+
+  #rateValue {
+    display: block;
+    text-align: center;
+    font-size: 24px;
+    margin-top: 4px;
+  }
+
+  /* STATUS */
+
+  #statusLine {
+    font-size: 16px;
+    text-align: center;
+    min-height: 24px;
+  }
+
+  /* OCR */
+
+  .ocr-bar,
+  #ocrProgress {
+    max-width: 100%;
+  }
+
+  /* FILMSTRIP */
+
+  .filmstrip-wrap {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 12px;
+  }
+
+  .filmstrip {
+    width: 100%;
+    min-height: 80px;
+  }
+
+  .page-card {
+    max-width: 100px;
+  }
+
+  /* SHUTTER */
+
+  .shutter-wrap {
+    width: 100%;
+    margin: 12px 0;
+  }
+
+  .shutter {
+    width: 76px;
+    height: 76px;
+  }
+
+  .shutter-hint {
+    font-size: 12px;
+    margin-top: 6px;
+  }
+
+  /* TRANSPORT BUTTONS */
+
+  .transport {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 12px 0;
+  }
+
+  .transport-btn {
+    min-width: 44px;
+    min-height: 42px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .transport-btn--main {
+    min-width: 52px;
+    min-height: 48px;
+  }
+
+  /* FOOTER */
+
+  footer {
+    width: 100%;
+    text-align: center;
+    margin-top: 16px;
+    padding: 10px 4px;
+  }
+
+  /* PREVENT DESKTOP-SIZED TEXT */
+
+  h1 {
+    font-size: clamp(22px, 7vw, 34px);
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  p {
+    max-width: 100%;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+  .console {
+    width: calc(100% - 12px);
+    margin: 6px auto;
+    padding: 9px;
+  }
+
+  .logo {
+    font-size: 24px;
+  }
+
+  .panel,
+  .voice-panel,
+  .speed-panel,
+  .status-panel,
+  .inventory-panel,
+  .control-panel {
+    padding: 11px;
+    margin: 7px 0;
+  }
+
+  .panel-title,
+  .section-title {
+    font-size: 16px;
+  }
+
+  .transport {
+    gap: 5px;
+  }
+
+  .transport-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
+ #b89c5a;
 
 --gold: #f4d52f;
 --gold-dark: #a88916;
@@ -642,3 +893,254 @@ body {
  font-size: 7px;
 }
 }
+/* =========================================================
+   MOBILE / PHONE LAYOUT
+   ========================================================= */
+
+@media (max-width: 700px) {
+
+  html,
+  body {
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  .console {
+    width: calc(100% - 20px);
+    max-width: none;
+    margin: 10px auto;
+    padding: 12px;
+    border-width: 3px;
+    border-radius: 12px;
+  }
+
+  /* HEADER */
+
+  .topbar {
+    padding: 8px 4px;
+    margin-bottom: 10px;
+  }
+
+  .logo {
+    font-size: clamp(22px, 7vw, 34px);
+    text-align: center;
+    line-height: 1;
+  }
+
+  .battery {
+    font-size: 11px;
+  }
+
+  /* MAIN DISPLAY */
+
+  .display,
+  .main-display,
+  .screen {
+    width: 100%;
+    min-height: 180px;
+    height: auto;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  /* ANY LARGE PANELS */
+
+  .panel,
+  .voice-panel,
+  .speed-panel,
+  .status-panel,
+  .inventory-panel,
+  .control-panel {
+    width: 100%;
+    min-height: 0;
+    height: auto;
+    margin: 10px 0;
+    padding: 14px;
+    box-sizing: border-box;
+  }
+
+  /* PANEL HEADINGS */
+
+  .panel-title,
+  .section-title {
+    font-size: 18px;
+    margin: 4px 0 14px;
+  }
+
+  /* VOICE SELECT */
+
+  select,
+  .dash-select,
+  #voiceSelect {
+    width: 100%;
+    max-width: 100%;
+    min-height: 48px;
+    font-size: 16px;
+    padding: 8px 12px;
+  }
+
+  /* SPEED */
+
+  .panel-row {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  #rateSlider {
+    width: 100%;
+    margin: 10px 0;
+  }
+
+  #rateValue {
+    display: block;
+    text-align: center;
+    font-size: 24px;
+    margin-top: 4px;
+  }
+
+  /* STATUS */
+
+  #statusLine {
+    font-size: 16px;
+    text-align: center;
+    min-height: 24px;
+  }
+
+  /* OCR */
+
+  .ocr-bar,
+  #ocrProgress {
+    max-width: 100%;
+  }
+
+  /* FILMSTRIP */
+
+  .filmstrip-wrap {
+    width: 100%;
+    overflow-x: auto;
+    margin-bottom: 12px;
+  }
+
+  .filmstrip {
+    width: 100%;
+    min-height: 80px;
+  }
+
+  .page-card {
+    max-width: 100px;
+  }
+
+  /* SHUTTER */
+
+  .shutter-wrap {
+    width: 100%;
+    margin: 12px 0;
+  }
+
+  .shutter {
+    width: 76px;
+    height: 76px;
+  }
+
+  .shutter-hint {
+    font-size: 12px;
+    margin-top: 6px;
+  }
+
+  /* TRANSPORT BUTTONS */
+
+  .transport {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 12px 0;
+  }
+
+  .transport-btn {
+    min-width: 44px;
+    min-height: 42px;
+    padding: 6px 10px;
+    font-size: 14px;
+  }
+
+  .transport-btn--main {
+    min-width: 52px;
+    min-height: 48px;
+  }
+
+  /* FOOTER */
+
+  footer {
+    width: 100%;
+    text-align: center;
+    margin-top: 16px;
+    padding: 10px 4px;
+  }
+
+  /* PREVENT DESKTOP-SIZED TEXT */
+
+  h1 {
+    font-size: clamp(22px, 7vw, 34px);
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  p {
+    max-width: 100%;
+  }
+}
+
+
+/* =========================================================
+   SMALL PHONES
+   ========================================================= */
+
+@media (max-width: 420px) {
+
+  .console {
+    width: calc(100% - 12px);
+    margin: 6px auto;
+    padding: 9px;
+  }
+
+  .logo {
+    font-size: 24px;
+  }
+
+  .panel,
+  .voice-panel,
+  .speed-panel,
+  .status-panel,
+  .inventory-panel,
+  .control-panel {
+    padding: 11px;
+    margin: 7px 0;
+  }
+
+  .panel-title,
+  .section-title {
+    font-size: 16px;
+  }
+
+  .transport {
+    gap: 5px;
+  }
+
+  .transport-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+}
+
