@@ -4,71 +4,75 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Kokoro Voice Test</title>
+<title>Kokoro Server Test</title>
 
 <style>
-    body {
-        margin: 0;
-        min-height: 100vh;
-        background: #202b20;
-        color: #d7e6a5;
-        font-family: monospace;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-    }
+* {
+    box-sizing: border-box;
+}
 
-    .box {
-        width: 100%;
-        max-width: 600px;
-        border: 4px solid #8fa85b;
-        padding: 24px;
-        box-shadow: 0 0 0 6px #111;
-    }
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: #202b20;
+    color: #d7e6a5;
+    font-family: monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
 
-    h1 {
-        margin-top: 0;
-        letter-spacing: 3px;
-    }
+.box {
+    width: 100%;
+    max-width: 600px;
+    border: 4px solid #8fa85b;
+    padding: 24px;
+    box-shadow: 0 0 0 6px #111;
+}
 
-    textarea,
-    select,
-    button {
-        width: 100%;
-        box-sizing: border-box;
-        margin-top: 12px;
-        padding: 14px;
-        font: inherit;
-    }
+h1 {
+    margin-top: 0;
+    letter-spacing: 3px;
+}
 
-    textarea {
-        min-height: 150px;
-        background: #111;
-        color: #d7e6a5;
-        border: 2px solid #8fa85b;
-    }
+textarea,
+select,
+button {
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px;
+    font: inherit;
+}
 
-    select,
-    button {
-        background: #111;
-        color: #d7e6a5;
-        border: 2px solid #8fa85b;
-    }
+textarea {
+    min-height: 150px;
+    background: #111;
+    color: #d7e6a5;
+    border: 2px solid #8fa85b;
+}
 
-    button {
-        cursor: pointer;
-        font-weight: bold;
-    }
+select,
+button {
+    background: #111;
+    color: #d7e6a5;
+    border: 2px solid #8fa85b;
+}
 
-    button:disabled {
-        opacity: 0.5;
-    }
+button {
+    cursor: pointer;
+    font-weight: bold;
+}
 
-    #status {
-        margin-top: 20px;
-        line-height: 1.5;
-    }
+button:disabled {
+    opacity: 0.5;
+}
+
+#status {
+    margin-top: 20px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
 </style>
 </head>
 
@@ -76,55 +80,48 @@
 
 <div class="box">
 
-    <h1>KOKORO VOICE TEST</h1>
+<h1>KOKORO SERVER TEST</h1>
 
-    <p>
-        LOCAL NEURAL TTS TEST
-    </p>
+<p>
+SERVER-SIDE NEURAL VOICE
+</p>
 
-    <textarea id="text">The ancient door slowly opens. Somewhere beyond it, a forgotten kingdom waits in the darkness.</textarea>
+<textarea id="text">The ancient door slowly opens. Somewhere beyond it, a forgotten kingdom waits in the darkness.</textarea>
 
-    <select id="voice">
-        <option value="af_heart">Heart — American Female</option>
-        <option value="af_bella">Bella — American Female</option>
-        <option value="af_nicole">Nicole — American Female</option>
-        <option value="af_sarah">Sarah — American Female</option>
-        <option value="am_adam">Adam — American Male</option>
-        <option value="am_michael">Michael — American Male</option>
-        <option value="bf_emma">Emma — British Female</option>
-        <option value="bm_george">George — British Male</option>
-    </select>
+<select id="voice">
+    <option value="af_heart">Heart — American Female</option>
+    <option value="af_bella">Bella — American Female</option>
+    <option value="af_sarah">Sarah — American Female</option>
+    <option value="am_michael">Michael — American Male</option>
+    <option value="am_adam">Adam — American Male</option>
+</select>
 
-    <button id="load">
-        LOAD KOKORO
-    </button>
+<button id="connect">
+    CONNECT TO KOKORO
+</button>
 
-    <button id="speak" disabled>
-        ▶ SPEAK
-    </button>
+<button id="speak" disabled>
+    ▶ SPEAK
+</button>
 
-    <div id="status">
-        STATUS: WAITING.
-    </div>
+<div id="status">
+STATUS: WAITING.
+</div>
 
 </div>
 
-
 <script type="module">
 
-import { KokoroTTS } from
-"https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm";
+import { Client } from
+"https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
 
 
-const MODEL =
-"onnx-community/Kokoro-82M-v1.0-ONNX";
+let client = null;
+let audioPlayer = null;
 
 
-let tts = null;
-
-
-const loadButton =
-document.getElementById("load");
+const connectButton =
+document.getElementById("connect");
 
 const speakButton =
 document.getElementById("speak");
@@ -139,149 +136,334 @@ const status =
 document.getElementById("status");
 
 
-/* =====================================================
-   LOAD MODEL
-===================================================== */
+function setStatus(message) {
 
-loadButton.addEventListener(
+    status.textContent =
+        "STATUS: " + message;
+
+}
+
+
+/* =========================================
+   CONNECT
+========================================= */
+
+connectButton.addEventListener(
     "click",
     async () => {
 
+        connectButton.disabled = true;
+
+        setStatus(
+            "CONNECTING TO OFFICIAL KOKORO SERVER..."
+        );
+
         try {
 
-            loadButton.disabled = true;
-
-            status.textContent =
-                "STATUS: LOADING KOKORO... THIS MAY TAKE A WHILE THE FIRST TIME.";
-
-            /*
-               WASM is intentionally used for this first test.
-               It has the broadest browser compatibility.
-            */
-
-            tts =
-                await KokoroTTS.from_pretrained(
-                    MODEL,
+            client =
+                await Client.connect(
+                    "hexgrad/Kokoro-TTS",
                     {
-                        dtype: "fp32",
-                        device: "webgpu"
+                        status_callback:
+                            (info) => {
+
+                                console.log(
+                                    "SPACE STATUS:",
+                                    info
+                                );
+
+                            }
                     }
                 );
 
 
-            status.textContent =
-                "STATUS: KOKORO READY.";
+            console.log(
+                "KOKORO CLIENT:",
+                client
+            );
 
-            speakButton.disabled = false;
 
-            loadButton.textContent =
-                "KOKORO READY";
+            setStatus(
+                "CONNECTED. CHECKING API..."
+            );
+
+
+            const api =
+                await client.view_api();
+
+
+            console.log(
+                "KOKORO API:",
+                api
+            );
+
+
+            setStatus(
+                "CONNECTED. READY TO SPEAK."
+            );
+
+
+            speakButton.disabled =
+                false;
+
+
+            connectButton.textContent =
+                "CONNECTED";
+
 
         }
 
         catch (error) {
 
-            console.error(error);
+            console.error(
+                "CONNECTION ERROR:",
+                error
+            );
 
-            status.textContent =
-                "STATUS: FAILED — CHECK BROWSER CONSOLE.";
 
-            loadButton.disabled = false;
+            setStatus(
+                "CONNECTION FAILED.\n\n" +
+                error.message
+            );
+
+
+            connectButton.disabled =
+                false;
+
         }
 
     }
 );
 
 
-/* =====================================================
+/* =========================================
    SPEAK
-===================================================== */
+========================================= */
 
 speakButton.addEventListener(
     "click",
     async () => {
 
-        if (!tts) {
+        if (!client) {
+
+            setStatus(
+                "CONNECT FIRST."
+            );
+
             return;
         }
 
 
+        const text =
+            textBox.value.trim();
+
+
+        if (!text) {
+
+            setStatus(
+                "ENTER SOME TEXT."
+            );
+
+            return;
+        }
+
+
+        speakButton.disabled =
+            true;
+
+
+        setStatus(
+            "SENDING TEXT TO KOKORO..."
+        );
+
+
         try {
 
-            speakButton.disabled = true;
-
-            status.textContent =
-                "STATUS: GENERATING VOICE...";
+            const voice =
+                voiceSelect.value;
 
 
-            const text =
-                textBox.value.trim();
+            /*
+             * Ask the Space what its actual API
+             * currently looks like.
+             */
+
+            const api =
+                await client.view_api();
 
 
-            if (!text) {
-
-                status.textContent =
-                    "STATUS: ENTER SOME TEXT.";
-
-                speakButton.disabled = false;
-
-                return;
-            }
+            console.log(
+                "CURRENT API:",
+                api
+            );
 
 
-            const audio =
-                await tts.generate(
-                    text,
+            /*
+             * Try the official generate endpoint.
+             *
+             * The payload is intentionally kept
+             * separate so we can see exactly what
+             * the Space accepts.
+             */
+
+            const result =
+                await client.predict(
+                    "/generate",
                     {
-                        voice:
-                            voiceSelect.value
+                        text: text,
+                        voice: voice,
+                        speed: 1
                     }
                 );
 
 
-            const blob =
-                audio.toBlob();
+            console.log(
+                "KOKORO RESULT:",
+                result
+            );
 
 
-            const url =
-                URL.createObjectURL(blob);
+            const data =
+                result.data;
 
 
-            const player =
-                new Audio(url);
+            if (!data || !data.length) {
+
+                throw new Error(
+                    "KOKORO RETURNED NO AUDIO."
+                );
+
+            }
 
 
-            player.onended =
+            console.log(
+                "AUDIO DATA:",
+                data
+            );
+
+
+            let audioURL = null;
+
+
+            const first =
+                data[0];
+
+
+            if (
+                typeof first ===
+                "string"
+            ) {
+
+                audioURL =
+                    first;
+
+            }
+
+            else if (
+                first &&
+                first.url
+            ) {
+
+                audioURL =
+                    first.url;
+
+            }
+
+            else if (
+                first &&
+                first.path
+            ) {
+
+                audioURL =
+                    first.path;
+
+            }
+
+
+            if (!audioURL) {
+
+                throw new Error(
+                    "AUDIO WAS RETURNED IN AN UNKNOWN FORMAT.\n\n" +
+                    JSON.stringify(
+                        first,
+                        null,
+                        2
+                    )
+                );
+
+            }
+
+
+            setStatus(
+                "AUDIO RECEIVED. PLAYING..."
+            );
+
+
+            if (audioPlayer) {
+
+                audioPlayer.pause();
+
+                audioPlayer = null;
+
+            }
+
+
+            audioPlayer =
+                new Audio(audioURL);
+
+
+            audioPlayer.onended =
                 () => {
 
-                    URL.revokeObjectURL(url);
+                    setStatus(
+                        "COMPLETE."
+                    );
 
                     speakButton.disabled =
                         false;
 
-                    status.textContent =
-                        "STATUS: COMPLETE.";
                 };
 
 
-            await player.play();
+            audioPlayer.onerror =
+                (error) => {
+
+                    console.error(
+                        "AUDIO ERROR:",
+                        error
+                    );
+
+                    setStatus(
+                        "AUDIO PLAYBACK FAILED."
+                    );
+
+                    speakButton.disabled =
+                        false;
+
+                };
 
 
-            status.textContent =
-                "STATUS: SPEAKING...";
-
+            await audioPlayer.play();
 
         }
 
         catch (error) {
 
-            console.error(error);
+            console.error(
+                "KOKORO GENERATION ERROR:",
+                error
+            );
 
-            status.textContent =
-                "STATUS: AUDIO FAILED — CHECK CONSOLE.";
+
+            setStatus(
+                "GENERATION FAILED.\n\n" +
+                error.message
+            );
+
 
             speakButton.disabled =
                 false;
+
         }
 
     }
