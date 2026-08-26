@@ -1,11 +1,21 @@
+/* =========================================================
+   PAGE READER
+   OCR + TEXT TO SPEECH
+   ========================================================= */
+
 const MAX_PAGES = 10;
 
 let pages = [];
 let currentPage = 0;
 let voices = [];
 let isSpeaking = false;
-let speechQueue = [];
+let speechChunks = [];
 let speechIndex = 0;
+
+
+/* =========================================================
+   ELEMENTS
+   ========================================================= */
 
 const cameraInput = document.getElementById("cameraInput");
 const scanBtn = document.getElementById("scanBtn");
@@ -25,962 +35,1212 @@ const playBtn = document.getElementById("playBtn");
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 
-const previousWordBtn = document.getElementById("previousWordBtn");
-const nextWordBtn = document.getElementById("nextWordBtn");
+const previousWordBtn =
+  document.getElementById("previousWordBtn");
+
+const nextWordBtn =
+  document.getElementById("nextWordBtn");
 
 const clearBtn = document.getElementById("clearBtn");
 
-const statusLine = document.getElementById("statusLine");
-const ocrProgress = document.getElementById("ocrProgress");
-const ocrPercent = document.getElementById("ocrPercent");
+const statusLine =
+  document.getElementById("statusLine");
+
+const ocrProgress =
+  document.getElementById("ocrProgress");
+
+const ocrPercent =
+  document.getElementById("ocrPercent");
 
 
 /* =========================================================
    STARTUP
-========================================================= */
+   ========================================================= */
 
-pageTotal.textContent = String(MAX_PAGES).padStart(2, "0");
+if (pageTotal) {
+  pageTotal.textContent =
+    String(MAX_PAGES).padStart(2, "0");
+}
 
-updateDisplay();
+if (rateSlider && rateValue) {
+
+  rateValue.textContent =
+    `${Number(rateSlider.value).toFixed(2)}x`;
+}
 
 loadVoices();
 
 if ("speechSynthesis" in window) {
-    speechSynthesis.onvoiceschanged = loadVoices;
+
+  speechSynthesis.onvoiceschanged =
+    loadVoices;
 }
+
+updateDisplay();
 
 
 /* =========================================================
    VOICES
-========================================================= */
+   ========================================================= */
 
 function loadVoices() {
 
-    if (!("speechSynthesis" in window)) {
-        voiceSelect.innerHTML =
-            "<option>Speech unavailable</option>";
-        return;
-    }
+  if (!voiceSelect) {
+    return;
+  }
 
-    voices = speechSynthesis.getVoices();
+  if (!("speechSynthesis" in window)) {
 
-    if (!voices.length) {
-        return;
-    }
+    voiceSelect.innerHTML =
+      "<option>Speech unavailable</option>";
 
-    voiceSelect.innerHTML = "";
+    return;
+  }
 
-    voices.forEach((voice, index) => {
+  voices =
+    speechSynthesis.getVoices();
 
-        const option = document.createElement("option");
+  if (!voices.length) {
+    return;
+  }
 
-        option.value = index;
+  voiceSelect.innerHTML = "";
 
-        option.textContent =
-            `${voice.name} — ${voice.lang}`;
+  voices.forEach((voice, index) => {
 
-        voiceSelect.appendChild(option);
-    });
+    const option =
+      document.createElement("option");
 
-    /*
-       Prefer a natural English voice.
-       Samantha is common on Apple devices.
-    */
+    option.value = index;
 
-    let preferred = voices.findIndex(v =>
-        /samantha/i.test(v.name)
+    option.textContent =
+      `${voice.name} — ${voice.lang}`;
+
+    voiceSelect.appendChild(option);
+  });
+
+
+  /*
+     Prefer English voices.
+     Samantha is especially nice on Apple devices
+     when available.
+  */
+
+  let preferred =
+    voices.findIndex(v =>
+      /Samantha/i.test(v.name)
     );
 
-    if (preferred < 0) {
-        preferred = voices.findIndex(v =>
-            /en-US/i.test(v.lang)
-        );
-    }
+  if (preferred < 0) {
 
-    if (preferred < 0) {
-        preferred = 0;
-    }
+    preferred =
+      voices.findIndex(v =>
+        /en-US/i.test(v.lang)
+      );
+  }
 
-    voiceSelect.value = preferred;
+  if (preferred < 0) {
+
+    preferred =
+      voices.findIndex(v =>
+        /^en/i.test(v.lang)
+      );
+  }
+
+  if (preferred >= 0) {
+
+    voiceSelect.value =
+      preferred;
+  }
 }
 
 
 /* =========================================================
-   SCAN
-========================================================= */
+   SCAN BUTTON
+   ========================================================= */
 
-scanBtn.addEventListener("click", () => {
+if (scanBtn && cameraInput) {
+
+  scanBtn.addEventListener("click", () => {
 
     cameraInput.click();
 
-});
+  });
 
 
-cameraInput.addEventListener("change", async event => {
+  cameraInput.addEventListener(
+    "change",
+    async event => {
 
-    const file = event.target.files[0];
+      const file =
+        event.target.files[0];
 
-    if (!file) {
+      if (!file) {
         return;
+      }
+
+      await scanPage(file);
+
+      cameraInput.value = "";
+
     }
-
-    await scanPage(file);
-
-    cameraInput.value = "";
-});
+  );
+}
 
 
 /* =========================================================
    OCR
-========================================================= */
+   ========================================================= */
 
 async function scanPage(file) {
 
-    if (pages.length >= MAX_PAGES) {
+  if (pages.length >= MAX_PAGES) {
 
-        setStatus("INVENTORY FULL.");
+    setStatus("INVENTORY FULL.");
 
-        return;
-    }
+    return;
+  }
 
-    stopSpeaking();
+  setStatus("SCANNING PAGE...");
 
-    setStatus("SCANNING PAGE...");
-    setProgress(0);
+  setProgress(0);
+
+  if (scanBtn) {
 
     scanBtn.disabled = true;
 
-    try {
+    scanBtn.textContent =
+      "◆ SCANNING ◆";
+  }
 
-        if (typeof Tesseract === "undefined") {
-            throw new Error("OCR ENGINE NOT LOADED");
-        }
+  try {
 
-        const result = await Tesseract.recognize(
-            file,
-            "eng",
-            {
-                logger: message => {
+    if (typeof Tesseract === "undefined") {
 
-                    if (
-                        message.status === "recognizing text" &&
-                        typeof message.progress === "number"
-                    ) {
-
-                        const percent =
-                            Math.round(
-                                message.progress * 100
-                            );
-
-                        setProgress(percent);
-
-                        setStatus(
-                            `READING PAGE... ${percent}%`
-                        );
-
-                    } else if (message.status) {
-
-                        const label =
-                            message.status
-                                .replace(/_/g, " ")
-                                .toUpperCase();
-
-                        setStatus(label + "...");
-                    }
-                }
-            }
-        );
-
-        const text =
-            result.data.text
-                .replace(/\n{3,}/g, "\n\n")
-                .trim();
-
-        if (!text) {
-
-            setStatus("NO TEXT FOUND.");
-
-            return;
-        }
-
-        const imageURL =
-            URL.createObjectURL(file);
-
-        pages.push({
-            text: text,
-            image: imageURL
-        });
-
-        currentPage = pages.length - 1;
-
-        setProgress(100);
-
-        setStatus("PAGE READ. QUEST UPDATED.");
-
-        updateDisplay();
-
-    } catch (error) {
-
-        console.error(error);
-
-        setStatus("OCR FAILED.");
-
-        if (textBuffer) {
-            textBuffer.textContent =
-                "THE PAGE COULD NOT BE READ.\n\nTRY AGAIN WITH BETTER LIGHT.";
-        }
-
-    } finally {
-
-        scanBtn.disabled = false;
+      throw new Error(
+        "OCR ENGINE NOT LOADED"
+      );
     }
+
+
+    const result =
+      await Tesseract.recognize(
+        file,
+        "eng",
+        {
+
+          logger: message => {
+
+            if (
+              message.status ===
+                "recognizing text" &&
+              typeof message.progress ===
+                "number"
+            ) {
+
+              const percent =
+                Math.round(
+                  message.progress * 100
+                );
+
+              setProgress(percent);
+
+              setStatus(
+                `READING PAGE... ${percent}%`
+              );
+
+            }
+
+            else if (message.status) {
+
+              const label =
+                message.status
+                  .replace(/_/g, " ")
+                  .toUpperCase();
+
+              setStatus(
+                label + "..."
+              );
+            }
+          }
+
+        }
+      );
+
+
+    const text =
+      result.data.text
+        .replace(/\r/g, "")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+
+
+    if (!text) {
+
+      setStatus(
+        "NO TEXT FOUND."
+      );
+
+      return;
+    }
+
+
+    const imageURL =
+      URL.createObjectURL(file);
+
+
+    pages.push({
+
+      text: text,
+
+      image: imageURL
+
+    });
+
+
+    currentPage =
+      pages.length - 1;
+
+
+    setProgress(100);
+
+    setStatus(
+      "PAGE READ. QUEST UPDATED."
+    );
+
+
+    updateDisplay();
+
+  }
+
+  catch (error) {
+
+    console.error(error);
+
+    setStatus(
+      "OCR FAILED."
+    );
+
+
+    if (textBuffer) {
+
+      textBuffer.textContent =
+        "THE PAGE COULD NOT BE READ.\n\n" +
+        "TRY AGAIN WITH BETTER LIGHT.";
+    }
+
+  }
+
+  finally {
+
+    if (scanBtn) {
+
+      scanBtn.disabled = false;
+
+      scanBtn.textContent =
+        "▲ SCAN PAGE";
+    }
+  }
 }
 
 
 /* =========================================================
    DISPLAY
-========================================================= */
+   ========================================================= */
 
 function updateDisplay() {
 
-    const number =
-        pages.length === 0
-            ? 0
-            : currentPage + 1;
+  const number =
+    pages.length === 0
+      ? 0
+      : currentPage + 1;
+
+
+  if (pageCount) {
 
     pageCount.textContent =
-        String(number).padStart(2, "0");
+      String(number).padStart(2, "0");
+  }
+
+
+  if (pageTotal) {
 
     pageTotal.textContent =
-        String(MAX_PAGES).padStart(2, "0");
+      String(MAX_PAGES).padStart(2, "0");
+  }
 
-    renderText();
 
-    renderFilmstrip();
+  renderText();
+
+  renderFilmstrip();
 }
 
 
+/* =========================================================
+   TEXT BUFFER
+   ========================================================= */
+
 function renderText() {
 
-    if (!pages.length) {
+  if (!textBuffer) {
+    return;
+  }
 
-        textBuffer.innerHTML = `
-            READY.<span class="cursor">_</span>
-            <br><br>
-            NO PAGES YET.<br><br>
-            SCAN A PAGE TO<br>
-            BEGIN YOUR QUEST.
-        `;
 
-        return;
-    }
+  if (!pages.length) {
 
-    textBuffer.textContent =
-        pages[currentPage].text;
+    textBuffer.innerHTML = `
+      READY.<span class="cursor">_</span>
+      <br><br>
+      NO PAGES YET.<br><br>
+      SCAN A PAGE TO<br>
+      BEGIN YOUR QUEST.
+    `;
+
+    return;
+  }
+
+
+  textBuffer.textContent =
+    pages[currentPage].text;
 }
 
 
 /* =========================================================
    FILMSTRIP
-========================================================= */
+   ========================================================= */
 
 function renderFilmstrip() {
 
-    filmstrip.innerHTML = "";
+  if (!filmstrip) {
+    return;
+  }
 
-    if (!pages.length) {
 
-        if (filmstripEmpty) {
-            filmstrip.appendChild(filmstripEmpty);
-        }
+  filmstrip.innerHTML = "";
 
-        return;
+
+  if (!pages.length) {
+
+    if (filmstripEmpty) {
+
+      filmstrip.appendChild(
+        filmstripEmpty
+      );
     }
 
-    pages.forEach((page, index) => {
+    return;
+  }
 
-        const card =
-            document.createElement("div");
 
-        card.className = "page-card";
+  pages.forEach(
+    (page, index) => {
 
-        if (index === currentPage) {
-            card.classList.add("active");
+      const card =
+        document.createElement("div");
+
+
+      card.className =
+        "page-card";
+
+
+      if (index === currentPage) {
+
+        card.classList.add(
+          "active"
+        );
+      }
+
+
+      const img =
+        document.createElement("img");
+
+
+      img.src =
+        page.image;
+
+
+      img.alt =
+        `Page ${index + 1}`;
+
+
+      card.appendChild(img);
+
+
+      card.addEventListener(
+        "click",
+        () => {
+
+          stopSpeaking();
+
+          currentPage =
+            index;
+
+          updateDisplay();
+
+          setStatus(
+            `PAGE ${String(
+              index + 1
+            ).padStart(2, "0")} LOADED.`
+          );
+
         }
+      );
 
-        const img =
-            document.createElement("img");
 
-        img.src = page.image;
+      filmstrip.appendChild(card);
 
-        img.alt =
-            `Page ${index + 1}`;
-
-        card.appendChild(img);
-
-        card.addEventListener("click", () => {
-
-            stopSpeaking();
-
-            currentPage = index;
-
-            updateDisplay();
-
-            setStatus(
-                `PAGE ${String(index + 1).padStart(2, "0")} LOADED.`
-            );
-        });
-
-        filmstrip.appendChild(card);
-    });
+    }
+  );
 }
 
 
 /* =========================================================
-   SPEECH ENGINE
-========================================================= */
+   PLAY / SPEECH
+   ========================================================= */
 
-playBtn.addEventListener("click", () => {
+if (playBtn) {
 
-    /*
-       IMPORTANT:
-       This function is called directly from the
-       user's button press. This is important on iPhone.
-    */
+  playBtn.addEventListener(
+    "click",
+    () => {
 
-    if (!pages.length) {
+      if (!pages.length) {
 
-        setStatus("SCAN A PAGE FIRST.");
-
-        return;
-    }
-
-    if (!("speechSynthesis" in window)) {
-
-        setStatus("SPEECH NOT SUPPORTED.");
+        setStatus(
+          "SCAN A PAGE FIRST."
+        );
 
         return;
-    }
+      }
 
-    if (isSpeaking) {
+
+      if (
+        !("speechSynthesis" in window)
+      ) {
+
+        setStatus(
+          "SPEECH NOT SUPPORTED."
+        );
+
+        return;
+      }
+
+
+      if (isSpeaking) {
 
         stopSpeaking();
 
-        setStatus("READING STOPPED.");
+        return;
+      }
+
+
+      const text =
+        pages[currentPage].text;
+
+
+      if (!text.trim()) {
+
+        setStatus(
+          "NO TEXT TO READ."
+        );
 
         return;
+      }
+
+
+      speakText(text);
+
     }
-
-    startSpeaking(
-        pages[currentPage].text
-    );
-});
-
-
-function startSpeaking(text) {
-
-    if (!text || !text.trim()) {
-
-        setStatus("NO TEXT TO READ.");
-
-        return;
-    }
-
-    stopSpeaking();
-
-    /*
-       Break long OCR text into smaller chunks.
-       This is MUCH more reliable on iPhone/Safari.
-    */
-
-    speechQueue =
-        splitTextIntoChunks(text);
-
-    speechIndex = 0;
-
-    if (!speechQueue.length) {
-
-        setStatus("NO TEXT TO READ.");
-
-        return;
-    }
-
-    isSpeaking = true;
-
-    playBtn.textContent = "■";
-
-    setStatus("READING PAGE...");
-
-    speakNextChunk();
+  );
 }
 
+
+/* =========================================================
+   NATURALER SPEECH ENGINE
+   ========================================================= */
+
+function speakText(text) {
+
+  if (
+    !("speechSynthesis" in window)
+  ) {
+
+    setStatus(
+      "SPEECH NOT SUPPORTED."
+    );
+
+    return;
+  }
+
+
+  speechSynthesis.cancel();
+
+
+  /*
+     Break OCR into smaller natural chunks.
+
+     This is much better than sending one giant
+     block of OCR text to the browser voice.
+  */
+
+  speechChunks =
+    text
+      .replace(/\r/g, "")
+      .split(
+        /\n{2,}|(?<=[.!?])\s+/
+      )
+      .map(
+        chunk => chunk.trim()
+      )
+      .filter(
+        chunk => chunk.length > 0
+      );
+
+
+  if (!speechChunks.length) {
+    return;
+  }
+
+
+  speechIndex = 0;
+
+  isSpeaking = true;
+
+
+  if (playBtn) {
+
+    playBtn.textContent =
+      "■";
+  }
+
+
+  setStatus(
+    "READING PAGE..."
+  );
+
+
+  speakNextChunk();
+}
+
+
+/* =========================================================
+   SPEAK NEXT CHUNK
+   ========================================================= */
 
 function speakNextChunk() {
 
-    if (!isSpeaking) {
-        return;
-    }
-
-    if (speechIndex >= speechQueue.length) {
-
-        isSpeaking = false;
-
-        playBtn.textContent = "▶";
-
-        setStatus("PAGE COMPLETE.");
-
-        return;
-    }
-
-    const chunk =
-        speechQueue[speechIndex];
-
-    const utterance =
-        new SpeechSynthesisUtterance(chunk);
-
-
-    /* -----------------------------
-       VOICE
-    ----------------------------- */
-
-    const selectedIndex =
-        Number(voiceSelect.value);
-
-    const selectedVoice =
-        voices[selectedIndex];
-
-    if (selectedVoice) {
-
-        utterance.voice =
-            selectedVoice;
-
-        utterance.lang =
-            selectedVoice.lang;
-    } else {
-
-        utterance.lang = "en-US";
-    }
-
-
-    /* -----------------------------
-       SPEED
-    ----------------------------- */
-
-    utterance.rate =
-        Number(rateSlider.value);
-
-    /*
-       Slightly lower pitch sounds
-       less robotic on many voices.
-    */
-
-    utterance.pitch = 0.95;
-
-    utterance.volume = 1;
-
-
-    /* -----------------------------
-       EVENTS
-    ----------------------------- */
-
-    utterance.onstart = () => {
-
-        isSpeaking = true;
-
-        playBtn.textContent = "■";
-
-    };
-
-
-    utterance.onend = () => {
-
-        if (!isSpeaking) {
-            return;
-        }
-
-        speechIndex++;
-
-        /*
-           Small delay between chunks prevents
-           Safari from randomly cutting speech off.
-        */
-
-        setTimeout(() => {
-
-            speakNextChunk();
-
-        }, 80);
-    };
-
-
-    utterance.onerror = event => {
-
-        console.error(
-            "Speech error:",
-            event
-        );
-
-        /*
-           Safari can occasionally throw "interrupted"
-           when speechSynthesis changes state.
-        */
-
-        if (
-            event.error === "interrupted" ||
-            event.error === "canceled"
-        ) {
-            return;
-        }
-
-        isSpeaking = false;
-
-        playBtn.textContent = "▶";
-
-        setStatus(
-            "SPEECH ERROR. TAP PLAY AGAIN."
-        );
-    };
-
-
-    /*
-       Make absolutely sure the speech engine
-       isn't carrying an old utterance.
-    */
-
-    speechSynthesis.cancel();
-
-    /*
-       Give Safari a moment after cancel()
-       before speaking the new utterance.
-    */
-
-    setTimeout(() => {
-
-        if (isSpeaking) {
-
-            speechSynthesis.speak(
-                utterance
-            );
-        }
-
-    }, 50);
-}
-
-
-/* =========================================================
-   SPLIT TEXT
-========================================================= */
-
-function splitTextIntoChunks(text) {
-
-    /*
-       Split at sentences first.
-    */
-
-    const sentences =
-        text.match(
-            /[^.!?]+[.!?]+|[^.!?]+$/g
-        ) || [text];
-
-    const chunks = [];
-
-    let current = "";
-
-    sentences.forEach(sentence => {
-
-        const cleaned =
-            sentence.trim();
-
-        if (!cleaned) {
-            return;
-        }
-
-        /*
-           Keep chunks around 350 characters.
-           This is friendly to mobile speech engines.
-        */
-
-        if (
-            (current + " " + cleaned).length
-            > 350
-        ) {
-
-            if (current.trim()) {
-                chunks.push(
-                    current.trim()
-                );
-            }
-
-            current = cleaned;
-
-        } else {
-
-            current +=
-                " " + cleaned;
-        }
-    });
-
-    if (current.trim()) {
-
-        chunks.push(
-            current.trim()
-        );
-    }
-
-    return chunks;
-}
-
-
-/* =========================================================
-   STOP SPEECH
-========================================================= */
-
-function stopSpeaking() {
+  if (
+    !isSpeaking ||
+    speechIndex >= speechChunks.length
+  ) {
 
     isSpeaking = false;
 
-    speechQueue = [];
+    if (playBtn) {
 
-    speechIndex = 0;
-
-    if ("speechSynthesis" in window) {
-
-        speechSynthesis.cancel();
+      playBtn.textContent =
+        "▶";
     }
 
-    playBtn.textContent = "▶";
+    setStatus(
+      "PAGE COMPLETE."
+    );
+
+    return;
+  }
+
+
+  const text =
+    speechChunks[speechIndex];
+
+
+  const utterance =
+    new SpeechSynthesisUtterance(
+      text
+    );
+
+
+  /*
+     SELECTED VOICE
+  */
+
+  const selectedVoice =
+    voiceSelect
+      ? voices[voiceSelect.value]
+      : null;
+
+
+  if (selectedVoice) {
+
+    utterance.voice =
+      selectedVoice;
+  }
+
+
+  /*
+     SPEED
+
+     Slightly below the raw slider value
+     makes speech sound less rushed.
+  */
+
+  const baseRate =
+    rateSlider
+      ? Number(rateSlider.value)
+      : 1;
+
+
+  utterance.rate =
+    Math.max(
+      0.75,
+      Math.min(
+        1.5,
+        baseRate * 0.96
+      )
+    );
+
+
+  /*
+     PITCH
+
+     Tiny variations keep the voice from
+     sounding completely flat.
+  */
+
+  const pitchPattern = [
+
+    1.02,
+    1.06,
+    0.99,
+    1.04,
+    1.00,
+    1.07
+
+  ];
+
+
+  utterance.pitch =
+    pitchPattern[
+      speechIndex %
+      pitchPattern.length
+    ];
+
+
+  utterance.volume = 1;
+
+
+  utterance.onstart = () => {
+
+    isSpeaking = true;
+
+    if (playBtn) {
+
+      playBtn.textContent =
+        "■";
+    }
+
+  };
+
+
+  utterance.onend = () => {
+
+    speechIndex++;
+
+
+    /*
+       Tiny pause between sentences.
+       Gives the narration some breathing room.
+    */
+
+    const pause =
+      /[.!?]$/.test(text)
+        ? 180
+        : 80;
+
+
+    setTimeout(
+      () => {
+
+        if (isSpeaking) {
+
+          speakNextChunk();
+
+        }
+
+      },
+      pause
+    );
+
+  };
+
+
+  utterance.onerror =
+    error => {
+
+      console.error(
+        "Speech error:",
+        error
+      );
+
+
+      isSpeaking = false;
+
+
+      if (playBtn) {
+
+        playBtn.textContent =
+          "▶";
+      }
+
+
+      setStatus(
+        "SPEECH ERROR."
+      );
+    };
+
+
+  speechSynthesis.speak(
+    utterance
+  );
+}
+
+
+/* =========================================================
+   STOP SPEAKING
+   ========================================================= */
+
+function stopSpeaking() {
+
+  if (
+    "speechSynthesis" in window
+  ) {
+
+    speechSynthesis.cancel();
+  }
+
+
+  isSpeaking = false;
+
+  speechChunks = [];
+
+  speechIndex = 0;
+
+
+  if (playBtn) {
+
+    playBtn.textContent =
+      "▶";
+  }
+
+
+  setStatus(
+    "READY."
+  );
 }
 
 
 /* =========================================================
    PAGE NAVIGATION
-========================================================= */
+   ========================================================= */
 
-prevBtn.addEventListener("click", () => {
+if (prevBtn) {
 
-    if (!pages.length) {
+  prevBtn.addEventListener(
+    "click",
+    () => {
 
-        setStatus("NO PAGES.");
+      if (!pages.length) {
+
+        setStatus(
+          "NO PAGES."
+        );
 
         return;
-    }
+      }
 
-    stopSpeaking();
 
-    currentPage--;
+      stopSpeaking();
 
-    if (currentPage < 0) {
+
+      currentPage--;
+
+
+      if (currentPage < 0) {
 
         currentPage =
-            pages.length - 1;
+          pages.length - 1;
+      }
+
+
+      updateDisplay();
+
+
+      setStatus(
+        `PAGE ${
+          currentPage + 1
+        } LOADED.`
+      );
+
     }
-
-    updateDisplay();
-
-    setStatus(
-        `PAGE ${currentPage + 1} LOADED.`
-    );
-});
+  );
+}
 
 
-nextBtn.addEventListener("click", () => {
+if (nextBtn) {
 
-    if (!pages.length) {
+  nextBtn.addEventListener(
+    "click",
+    () => {
 
-        setStatus("NO PAGES.");
+      if (!pages.length) {
+
+        setStatus(
+          "NO PAGES."
+        );
 
         return;
-    }
+      }
 
-    stopSpeaking();
 
-    currentPage++;
+      stopSpeaking();
 
-    if (
-        currentPage >= pages.length
-    ) {
+
+      currentPage++;
+
+
+      if (
+        currentPage >=
+        pages.length
+      ) {
 
         currentPage = 0;
+      }
+
+
+      updateDisplay();
+
+
+      setStatus(
+        `PAGE ${
+          currentPage + 1
+        } LOADED.`
+      );
+
     }
-
-    updateDisplay();
-
-    setStatus(
-        `PAGE ${currentPage + 1} LOADED.`
-    );
-});
+  );
+}
 
 
 /* =========================================================
-   PREVIOUS / NEXT SECTION
-========================================================= */
+   PREVIOUS / NEXT SPEECH CONTROLS
+   ========================================================= */
 
 if (previousWordBtn) {
 
-    previousWordBtn.addEventListener(
-        "click",
-        () => {
+  previousWordBtn.addEventListener(
+    "click",
+    () => {
 
-            if (!pages.length) {
+      if (!pages.length) {
 
-                setStatus("NO PAGES.");
+        setStatus(
+          "NO PAGES."
+        );
 
-                return;
-            }
+        return;
+      }
 
-            stopSpeaking();
 
-            setStatus("READING PAGE...");
+      stopSpeaking();
 
-            startSpeaking(
-                pages[currentPage].text
-            );
-        }
-    );
+
+      setStatus(
+        "RESTARTING PAGE."
+      );
+
+
+      speakText(
+        pages[currentPage].text
+      );
+
+    }
+  );
 }
 
 
 if (nextWordBtn) {
 
-    nextWordBtn.addEventListener(
-        "click",
-        () => {
+  nextWordBtn.addEventListener(
+    "click",
+    () => {
 
-            if (!pages.length) {
+      if (!pages.length) {
 
-                setStatus("NO PAGES.");
+        setStatus(
+          "NO PAGES."
+        );
 
-                return;
-            }
+        return;
+      }
 
-            stopSpeaking();
 
-            setStatus("READING PAGE...");
+      stopSpeaking();
 
-            startSpeaking(
-                pages[currentPage].text
-            );
-        }
-    );
+
+      setStatus(
+        "CONTINUING PAGE."
+      );
+
+
+      speakText(
+        pages[currentPage].text
+      );
+
+    }
+  );
 }
 
 
 /* =========================================================
    SPEED
-========================================================= */
+   ========================================================= */
 
-rateSlider.addEventListener(
+if (rateSlider) {
+
+  rateSlider.addEventListener(
     "input",
     () => {
 
-        const value =
-            Number(rateSlider.value);
+      const value =
+        Number(
+          rateSlider.value
+        );
+
+
+      if (rateValue) {
 
         rateValue.textContent =
-            `${value.toFixed(2)}x`;
+          `${value.toFixed(2)}x`;
+      }
 
-        if (isSpeaking) {
 
-            /*
-               Restart at the current chunk
-               using the new speed.
-            */
+      /*
+         Don't abruptly kill speech while
+         the user is moving the slider.
+      */
 
-            speechSynthesis.cancel();
-
-            setTimeout(() => {
-
-                if (isSpeaking) {
-                    speakNextChunk();
-                }
-
-            }, 50);
-        }
     }
-);
+  );
+}
 
 
 /* =========================================================
    VOICE CHANGE
-========================================================= */
+   ========================================================= */
 
-voiceSelect.addEventListener(
+if (voiceSelect) {
+
+  voiceSelect.addEventListener(
     "change",
     () => {
 
-        if (isSpeaking) {
+      if (isSpeaking) {
 
-            speechSynthesis.cancel();
+        stopSpeaking();
 
-            setTimeout(() => {
+        setStatus(
+          "VOICE CHANGED. PRESS PLAY."
+        );
+      }
 
-                if (isSpeaking) {
-                    speakNextChunk();
-                }
-
-            }, 50);
-        }
     }
-);
+  );
+}
 
 
 /* =========================================================
    CLEAR
-========================================================= */
+   ========================================================= */
 
-clearBtn.addEventListener(
+if (clearBtn) {
+
+  clearBtn.addEventListener(
     "click",
     () => {
 
-        if (!pages.length) {
-
-            setStatus(
-                "INVENTORY ALREADY EMPTY."
-            );
-
-            return;
-        }
-
-        stopSpeaking();
-
-        const confirmed =
-            confirm(
-                "CLEAR ALL PAGES?"
-            );
-
-        if (!confirmed) {
-            return;
-        }
-
-        pages.forEach(page => {
-
-            if (page.image) {
-
-                URL.revokeObjectURL(
-                    page.image
-                );
-            }
-        });
-
-        pages = [];
-
-        currentPage = 0;
-
-        setProgress(0);
+      if (!pages.length) {
 
         setStatus(
-            "INVENTORY CLEARED."
+          "INVENTORY ALREADY EMPTY."
         );
 
-        updateDisplay();
+        return;
+      }
+
+
+      const confirmed =
+        confirm(
+          "CLEAR ALL PAGES?"
+        );
+
+
+      if (!confirmed) {
+        return;
+      }
+
+
+      stopSpeaking();
+
+
+      pages.forEach(
+        page => {
+
+          if (page.image) {
+
+            URL.revokeObjectURL(
+              page.image
+            );
+          }
+
+        }
+      );
+
+
+      pages = [];
+
+      currentPage = 0;
+
+
+      setProgress(0);
+
+      setStatus(
+        "INVENTORY CLEARED."
+      );
+
+
+      updateDisplay();
+
     }
-);
+  );
+}
 
 
 /* =========================================================
    STATUS
-========================================================= */
+   ========================================================= */
 
 function setStatus(message) {
 
-    statusLine.textContent =
-        message.toUpperCase();
+  if (!statusLine) {
+    return;
+  }
+
+
+  statusLine.textContent =
+    message.toUpperCase();
 }
 
+
+/* =========================================================
+   OCR PROGRESS
+   ========================================================= */
 
 function setProgress(value) {
 
-    const safeValue =
-        Math.max(
-            0,
-            Math.min(100, value)
-        );
+  const safeValue =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        value
+      )
+    );
+
+
+  if (ocrProgress) {
 
     ocrProgress.style.width =
-        `${safeValue}%`;
+      `${safeValue}%`;
+  }
+
+
+  if (ocrPercent) {
 
     ocrPercent.textContent =
-        `${safeValue}%`;
+      `${safeValue}%`;
+  }
 }
 
 
 /* =========================================================
-   KEYBOARD
-========================================================= */
+   KEYBOARD CONTROLS
+   ========================================================= */
 
 document.addEventListener(
-    "keydown",
-    event => {
+  "keydown",
+  event => {
 
-        if (
-            event.code === "Space"
-        ) {
+    /*
+       SPACE = PLAY / STOP
+    */
 
-            event.preventDefault();
+    if (
+      event.code === "Space"
+    ) {
 
-            playBtn.click();
-        }
+      event.preventDefault();
 
-        if (
-            event.code === "ArrowLeft"
-        ) {
+      if (playBtn) {
 
-            prevBtn.click();
-        }
-
-        if (
-            event.code === "ArrowRight"
-        ) {
-
-            nextBtn.click();
-        }
-
-        if (
-            event.key.toLowerCase()
-            === "s"
-        ) {
-
-            scanBtn.click();
-        }
+        playBtn.click();
+      }
     }
-);
 
 
-/* =========================================================
-   MOBILE SPEECH UNLOCK
-========================================================= */
+    /*
+       LEFT = PREVIOUS PAGE
+    */
 
-/*
-   Some mobile browsers need the speech engine
-   awakened by a real user interaction.
+    if (
+      event.code === "ArrowLeft"
+    ) {
 
-   This tiny silent utterance does that.
-*/
+      if (prevBtn) {
 
-document.addEventListener(
-    "touchstart",
-    () => {
-
-        if (
-            "speechSynthesis" in window &&
-            !window.__speechUnlocked
-        ) {
-
-            const unlock =
-                new SpeechSynthesisUtterance("");
-
-            unlock.volume = 0;
-
-            speechSynthesis.speak(
-                unlock
-            );
-
-            window.__speechUnlocked = true;
-        }
-
-    },
-    {
-        once: true,
-        passive: true
+        prevBtn.click();
+      }
     }
+
+
+    /*
+       RIGHT = NEXT PAGE
+    */
+
+    if (
+      event.code === "ArrowRight"
+    ) {
+
+      if (nextBtn) {
+
+        nextBtn.click();
+      }
+    }
+
+
+    /*
+       S = SCAN
+    */
+
+    if (
+      event.key.toLowerCase() === "s"
+    ) {
+
+      if (scanBtn) {
+
+        scanBtn.click();
+      }
+    }
+
+  }
 );
