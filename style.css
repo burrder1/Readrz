@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+  >
+
+  <title>PAGE READER</title>
+
+  <meta name="theme-color" content="#9bbc0f">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" href="icons/icon-192.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
+    rel="stylesheet"
+  >
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <div class="console">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="battery">
+        <span class="battery-dot"></span>
+        BATTERY
+      </div>
+
+      <div class="logo">
+        PAGE READER
+      </div>
+
+      <div class="topbar-line"></div>
+    </header>
+
+
+    <!-- MAIN DISPLAY -->
+    <main class="screen">
+
+      <!-- LEFT PANEL -->
+      <aside class="side-panel">
+
+        <section class="panel-box">
+          <div class="panel-title">PAGES</div>
+
+          <div class="counter">
+            <span id="pageCount">00</span>
+            <span class="slash">/</span>
+            <span id="pageTotal">10</span>
+          </div>
+
+          <div class="counter-label">
+            PAGES SCANNED
+          </div>
+        </section>
+
+
+        <section class="scan-box">
+
+          <div class="camera-icon">●</div>
+
+          <div id="emptyState" class="empty-state">
+            NO PAGES YET.
+            <br><br>
+            TAP SCAN PAGE
+            <br>
+            TO READ A PAGE.
+          </div>
+
+        </section>
+
+      </aside>
+
+
+      <!-- CENTER OCR DISPLAY -->
+      <section class="reader">
+
+        <div class="reader-header">
+          <span>TEXT BUFFER</span>
+          <span id="scanStatus">READY</span>
+        </div>
+
+        <div id="filmstrip" class="text-display">
+          <div class="placeholder">
+            READY_
+          </div>
+        </div>
+
+      </section>
+
+
+      <!-- RIGHT PANEL -->
+      <aside class="controls">
+
+        <section class="panel-box">
+
+          <div class="panel-title">
+            VOICE
+          </div>
+
+          <select id="voiceSelect">
+            <option>Loading...</option>
+          </select>
+
+        </section>
+
+
+        <section class="panel-box">
+
+          <div class="panel-title">
+            SPEED
+          </div>
+
+          <div class="speed-control">
+
+            <input
+              type="range"
+              id="rateSlider"
+              min="0.75"
+              max="1.5"
+              step="0.05"
+              value="1"
+            >
+
+            <div id="rateValue">
+              1.00x
+            </div>
+
+          </div>
+
+        </section>
+
+
+        <section class="panel-box status-box">
+
+          <div class="panel-title">
+            STATUS
+          </div>
+
+          <div id="statusLine">
+            READY.
+          </div>
+
+        </section>
+
+      </aside>
+
+    </main>
+
+
+    <!-- BOTTOM CONTROLS -->
+    <footer class="controls-bar">
+
+      <!-- CAMERA INPUT -->
+      <input
+        type="file"
+        id="cameraInput"
+        accept="image/*"
+        capture="environment"
+        hidden
+      >
+
+      <button id="scanBtn" class="big-button">
+        <span class="button-icon">●</span>
+        SCAN PAGE
+      </button>
+
+
+      <button
+        id="prevBtn"
+        class="control-button"
+        aria-label="Previous page"
+      >
+        ◀◀
+      </button>
+
+
+      <button
+        id="backBtn"
+        class="control-button"
+        aria-label="Previous text"
+      >
+        ◀
+      </button>
+
+
+      <button
+        id="playBtn"
+        class="play-button"
+        aria-label="Play"
+      >
+        ▶
+      </button>
+
+
+      <button
+        id="nextBtn"
+        class="control-button"
+        aria-label="Next page"
+      >
+        ▶
+      </button>
+
+
+      <button
+        id="nextPageBtn"
+        class="control-button"
+        aria-label="Next page"
+      >
+        ▶▶
+      </button>
+
+
+      <button
+        id="clearBtn"
+        class="big-button clear-button"
+      >
+        CLEAR
+      </button>
+
+    </footer>
+
+
+    <!-- OCR PROGRESS -->
+    <div class="progress-wrap">
+
+      <div class="progress-label">
+        <span>OCR</span>
+        <span id="progressText">0%</span>
+      </div>
+
+      <div class="progress-bar">
+        <div id="progressFill"></div>
+      </div>
+
+    </div>
+
+
+    <!-- FOOTER -->
+    <div class="footer-text">
+      RETRO TECH. MODERN POWER. PAGE BY PAGE.
+    </div>
+
+  </div>
+
+
+  <!-- TESSERACT OCR -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+
+  <!-- YOUR APP -->
+  <script src="app.js"></script>
+
+</body>
+</html>
