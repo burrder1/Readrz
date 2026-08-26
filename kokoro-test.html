@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
 <title>Kokoro Server Test</title>
 
 <style>
+
 * {
     box-sizing: border-box;
 }
@@ -14,226 +21,560 @@
 body {
     margin: 0;
     min-height: 100vh;
-    background: #202b20;
-    color: #d7e6a5;
-    font-family: monospace;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
+
+    background:
+        #202b20;
+
+    color:
+        #d7e6a5;
+
+    font-family:
+        monospace;
+
+    display:
+        flex;
+
+    align-items:
+        center;
+
+    justify-content:
+        center;
+
+    padding:
+        20px;
 }
 
 .box {
-    width: 100%;
-    max-width: 600px;
-    border: 4px solid #8fa85b;
-    padding: 24px;
-    box-shadow: 0 0 0 6px #111;
+
+    width:
+        100%;
+
+    max-width:
+        650px;
+
+    border:
+        4px solid #8fa85b;
+
+    padding:
+        24px;
+
+    box-shadow:
+        0 0 0 6px #111;
 }
 
 h1 {
-    margin-top: 0;
-    letter-spacing: 3px;
+
+    margin-top:
+        0;
+
+    letter-spacing:
+        4px;
+
+    line-height:
+        1.2;
 }
 
 textarea,
 select,
 button {
-    width: 100%;
-    margin-top: 12px;
-    padding: 14px;
-    font: inherit;
+
+    width:
+        100%;
+
+    margin-top:
+        14px;
+
+    padding:
+        16px;
+
+    font:
+        inherit;
 }
 
 textarea {
-    min-height: 150px;
-    background: #111;
-    color: #d7e6a5;
-    border: 2px solid #8fa85b;
+
+    min-height:
+        170px;
+
+    background:
+        #111;
+
+    color:
+        #d7e6a5;
+
+    border:
+        2px solid #8fa85b;
+
+    resize:
+        vertical;
 }
 
 select,
 button {
-    background: #111;
-    color: #d7e6a5;
-    border: 2px solid #8fa85b;
+
+    background:
+        #111;
+
+    color:
+        #d7e6a5;
+
+    border:
+        2px solid #8fa85b;
 }
 
 button {
-    cursor: pointer;
-    font-weight: bold;
+
+    cursor:
+        pointer;
+
+    font-weight:
+        bold;
 }
 
 button:disabled {
-    opacity: 0.5;
+
+    opacity:
+        0.45;
+
+    cursor:
+        not-allowed;
 }
 
 #status {
-    margin-top: 20px;
-    line-height: 1.5;
-    white-space: pre-wrap;
+
+    margin-top:
+        22px;
+
+    white-space:
+        pre-wrap;
+
+    line-height:
+        1.6;
 }
+
+audio {
+
+    width:
+        100%;
+
+    margin-top:
+        20px;
+}
+
 </style>
+
 </head>
+
 
 <body>
 
+
 <div class="box">
 
-<h1>KOKORO SERVER TEST</h1>
+<h1>
+KOKORO SERVER TEST
+</h1>
 
 <p>
-SERVER-SIDE NEURAL VOICE
+OFFICIAL KOKORO SERVER
 </p>
+
 
 <textarea id="text">The ancient door slowly opens. Somewhere beyond it, a forgotten kingdom waits in the darkness.</textarea>
 
+
 <select id="voice">
-    <option value="af_heart">Heart — American Female</option>
-    <option value="af_bella">Bella — American Female</option>
-    <option value="af_sarah">Sarah — American Female</option>
-    <option value="am_michael">Michael — American Male</option>
-    <option value="am_adam">Adam — American Male</option>
+
+<option value="af_heart">
+Heart — American Female
+</option>
+
+<option value="af_bella">
+Bella — American Female
+</option>
+
+<option value="af_sarah">
+Sarah — American Female
+</option>
+
+<option value="af_nicole">
+Nicole — American Female
+</option>
+
+<option value="af_sky">
+Sky — American Female
+</option>
+
+<option value="am_adam">
+Adam — American Male
+</option>
+
+<option value="am_michael">
+Michael — American Male
+</option>
+
 </select>
 
-<button id="connect">
-    CONNECT TO KOKORO
+
+<button id="speakButton">
+▶ SPEAK
 </button>
 
-<button id="speak" disabled>
-    ▶ SPEAK
-</button>
 
 <div id="status">
-STATUS: WAITING.
+STATUS: READY.
 </div>
 
+
+<audio
+    id="audio"
+    controls
+    playsinline
+></audio>
+
+
 </div>
 
-<script type="module">
 
-import { Client } from
-"https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
+<script>
 
 
-let client = null;
-let audioPlayer = null;
+const SPACE =
+    "https://hexgrad-kokoro-tts.hf.space";
 
 
-const connectButton =
-document.getElementById("connect");
+const API =
+    "/gradio_api/call/generate";
 
-const speakButton =
-document.getElementById("speak");
 
 const textBox =
-document.getElementById("text");
+    document.getElementById("text");
 
-const voiceSelect =
-document.getElementById("voice");
+
+const voiceBox =
+    document.getElementById("voice");
+
+
+const speakButton =
+    document.getElementById("speakButton");
+
 
 const status =
-document.getElementById("status");
+    document.getElementById("status");
 
 
-function setStatus(message) {
+const audio =
+    document.getElementById("audio");
+
+
+let audioURL =
+    null;
+
+
+function setStatus(text) {
 
     status.textContent =
-        "STATUS: " + message;
+        "STATUS: " + text;
 
 }
 
 
 /* =========================================
-   CONNECT
+   WAV CREATOR
 ========================================= */
 
-connectButton.addEventListener(
-    "click",
-    async () => {
+function makeWav(
+    sampleRate,
+    samples
+) {
 
-        connectButton.disabled = true;
-
-        setStatus(
-            "CONNECTING TO OFFICIAL KOKORO SERVER..."
+    const buffer =
+        new ArrayBuffer(
+            44 + samples.length * 2
         );
 
-        try {
-
-            client =
-                await Client.connect(
-                    "hexgrad/Kokoro-TTS",
-                    {
-                        status_callback:
-                            (info) => {
-
-                                console.log(
-                                    "SPACE STATUS:",
-                                    info
-                                );
-
-                            }
-                    }
-                );
+    const view =
+        new DataView(buffer);
 
 
-            console.log(
-                "KOKORO CLIENT:",
-                client
+    function writeString(
+        offset,
+        string
+    ) {
+
+        for (
+            let i = 0;
+            i < string.length;
+            i++
+        ) {
+
+            view.setUint8(
+                offset + i,
+                string.charCodeAt(i)
             );
-
-
-            setStatus(
-                "CONNECTED. CHECKING API..."
-            );
-
-
-            const api =
-                await client.view_api();
-
-
-            console.log(
-                "KOKORO API:",
-                api
-            );
-
-
-            setStatus(
-                "CONNECTED. READY TO SPEAK."
-            );
-
-
-            speakButton.disabled =
-                false;
-
-
-            connectButton.textContent =
-                "CONNECTED";
-
-
-        }
-
-        catch (error) {
-
-            console.error(
-                "CONNECTION ERROR:",
-                error
-            );
-
-
-            setStatus(
-                "CONNECTION FAILED.\n\n" +
-                error.message
-            );
-
-
-            connectButton.disabled =
-                false;
 
         }
 
     }
-);
+
+
+    writeString(
+        0,
+        "RIFF"
+    );
+
+
+    view.setUint32(
+        4,
+        36 + samples.length * 2,
+        true
+    );
+
+
+    writeString(
+        8,
+        "WAVE"
+    );
+
+
+    writeString(
+        12,
+        "fmt "
+    );
+
+
+    view.setUint32(
+        16,
+        16,
+        true
+    );
+
+
+    view.setUint16(
+        20,
+        1,
+        true
+    );
+
+
+    view.setUint16(
+        22,
+        1,
+        true
+    );
+
+
+    view.setUint32(
+        24,
+        sampleRate,
+        true
+    );
+
+
+    view.setUint32(
+        28,
+        sampleRate * 2,
+        true
+    );
+
+
+    view.setUint16(
+        32,
+        2,
+        true
+    );
+
+
+    view.setUint16(
+        34,
+        16,
+        true
+    );
+
+
+    writeString(
+        36,
+        "data"
+    );
+
+
+    view.setUint32(
+        40,
+        samples.length * 2,
+        true
+    );
+
+
+    let offset =
+        44;
+
+
+    for (
+        let i = 0;
+        i < samples.length;
+        i++
+    ) {
+
+        let sample =
+            Number(samples[i]);
+
+
+        sample =
+            Math.max(
+                -1,
+                Math.min(
+                    1,
+                    sample
+                )
+            );
+
+
+        const intSample =
+            sample < 0
+                ? sample * 32768
+                : sample * 32767;
+
+
+        view.setInt16(
+            offset,
+            intSample,
+            true
+        );
+
+
+        offset += 2;
+
+    }
+
+
+    return new Blob(
+        [buffer],
+        {
+            type:
+                "audio/wav"
+        }
+    );
+
+}
+
+
+/* =========================================
+   FIND AUDIO INSIDE GRADIO RESULT
+========================================= */
+
+async function handleAudio(
+    value
+) {
+
+    console.log(
+        "KOKORO AUDIO RESULT:",
+        value
+    );
+
+
+    /*
+       Case 1:
+       Gradio returns a file object.
+    */
+
+    if (
+        value &&
+        typeof value === "object" &&
+        !Array.isArray(value)
+    ) {
+
+        if (value.url) {
+
+            return value.url;
+
+        }
+
+        if (value.path) {
+
+            return (
+                SPACE +
+                "/gradio_api/file=" +
+                encodeURIComponent(
+                    value.path
+                )
+            );
+
+        }
+
+    }
+
+
+    /*
+       Case 2:
+       Gradio returns:
+
+       [sampleRate, samples]
+    */
+
+    if (
+        Array.isArray(value) &&
+        value.length === 2 &&
+        typeof value[0] === "number" &&
+        Array.isArray(value[1])
+    ) {
+
+        const blob =
+            makeWav(
+                value[0],
+                value[1]
+            );
+
+
+        return URL.createObjectURL(
+            blob
+        );
+
+    }
+
+
+    /*
+       Case 3:
+       Nested audio result.
+    */
+
+    if (
+        Array.isArray(value)
+    ) {
+
+        for (
+            const item of value
+        ) {
+
+            try {
+
+                const result =
+                    await handleAudio(
+                        item
+                    );
+
+
+                if (result) {
+
+                    return result;
+
+                }
+
+            }
+
+            catch {
+
+                continue;
+
+            }
+
+        }
+
+    }
+
+
+    return null;
+
+}
 
 
 /* =========================================
@@ -243,16 +584,6 @@ connectButton.addEventListener(
 speakButton.addEventListener(
     "click",
     async () => {
-
-        if (!client) {
-
-            setStatus(
-                "CONNECT FIRST."
-            );
-
-            return;
-        }
-
 
         const text =
             textBox.value.trim();
@@ -265,6 +596,7 @@ speakButton.addEventListener(
             );
 
             return;
+
         }
 
 
@@ -273,119 +605,319 @@ speakButton.addEventListener(
 
 
         setStatus(
-            "SENDING TEXT TO KOKORO..."
+            "CONTACTING KOKORO..."
+        );
+
+
+        if (audioURL) {
+
+            URL.revokeObjectURL(
+                audioURL
+            );
+
+            audioURL =
+                null;
+
+        }
+
+
+        audio.removeAttribute(
+            "src"
         );
 
 
         try {
 
-            const voice =
-                voiceSelect.value;
-
 
             /*
-             * Ask the Space what its actual API
-             * currently looks like.
-             */
-
-            const api =
-                await client.view_api();
-
-
-            console.log(
-                "CURRENT API:",
-                api
-            );
-
-
-            /*
-             * Try the official generate endpoint.
+             * Current official Kokoro API:
              *
-             * The payload is intentionally kept
-             * separate so we can see exactly what
-             * the Space accepts.
+             * text
+             * voice
+             * speed
+             * use_gpu
              */
 
-            const result =
-                await client.predict(
-                    "/generate",
+            const response =
+                await fetch(
+                    SPACE + API,
                     {
-                        text: text,
-                        voice: voice,
-                        speed: 1
+                        method:
+                            "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+
+                                data: [
+
+                                    text,
+
+                                    voiceBox.value,
+
+                                    1,
+
+                                    false
+
+                                ]
+
+                            })
+
                     }
                 );
 
 
-            console.log(
-                "KOKORO RESULT:",
-                result
-            );
-
-
-            const data =
-                result.data;
-
-
-            if (!data || !data.length) {
+            if (!response.ok) {
 
                 throw new Error(
-                    "KOKORO RETURNED NO AUDIO."
+                    "SERVER HTTP " +
+                    response.status
                 );
 
             }
 
 
+            const start =
+                await response.json();
+
+
             console.log(
-                "AUDIO DATA:",
-                data
+                "JOB STARTED:",
+                start
             );
 
 
-            let audioURL = null;
-
-
-            const first =
-                data[0];
-
-
-            if (
-                typeof first ===
-                "string"
-            ) {
-
-                audioURL =
-                    first;
-
-            }
-
-            else if (
-                first &&
-                first.url
-            ) {
-
-                audioURL =
-                    first.url;
-
-            }
-
-            else if (
-                first &&
-                first.path
-            ) {
-
-                audioURL =
-                    first.path;
-
-            }
-
-
-            if (!audioURL) {
+            if (!start.event_id) {
 
                 throw new Error(
-                    "AUDIO WAS RETURNED IN AN UNKNOWN FORMAT.\n\n" +
+                    "NO EVENT ID RETURNED."
+                );
+
+            }
+
+
+            setStatus(
+                "KOKORO IS GENERATING..."
+            );
+
+
+            const resultResponse =
+                await fetch(
+
+                    SPACE +
+                    API +
+                    "/" +
+                    start.event_id
+
+                );
+
+
+            if (!resultResponse.ok) {
+
+                throw new Error(
+                    "RESULT HTTP " +
+                    resultResponse.status
+                );
+
+            }
+
+
+            const reader =
+                resultResponse.body.getReader();
+
+
+            const decoder =
+                new TextDecoder();
+
+
+            let buffer =
+                "";
+
+
+            let finalData =
+                null;
+
+
+            while (true) {
+
+
+                const {
+                    value,
+                    done
+                } =
+                    await reader.read();
+
+
+                if (done) {
+
+                    break;
+
+                }
+
+
+                buffer +=
+                    decoder.decode(
+                        value,
+                        {
+                            stream:
+                                true
+                        }
+                    );
+
+
+                const events =
+                    buffer.split(
+                        "\n\n"
+                    );
+
+
+                buffer =
+                    events.pop();
+
+
+                for (
+                    const event
+                    of events
+                ) {
+
+
+                    console.log(
+                        "SSE EVENT:",
+                        event
+                    );
+
+
+                    const lines =
+                        event.split(
+                            "\n"
+                        );
+
+
+                    let eventType =
+                        "";
+
+
+                    let dataText =
+                        "";
+
+
+                    for (
+                        const line
+                        of lines
+                    ) {
+
+                        if (
+                            line.startsWith(
+                                "event:"
+                            )
+                        ) {
+
+                            eventType =
+                                line
+                                    .slice(
+                                        6
+                                    )
+                                    .trim();
+
+                        }
+
+
+                        if (
+                            line.startsWith(
+                                "data:"
+                            )
+                        ) {
+
+                            dataText +=
+                                line
+                                    .slice(
+                                        5
+                                    )
+                                    .trim();
+
+                        }
+
+                    }
+
+
+                    console.log(
+                        "EVENT TYPE:",
+                        eventType
+                    );
+
+
+                    if (
+                        eventType ===
+                        "error"
+                    ) {
+
+                        throw new Error(
+                            dataText
+                        );
+
+                    }
+
+
+                    if (
+                        eventType ===
+                        "complete"
+                    ) {
+
+                        finalData =
+                            JSON.parse(
+                                dataText
+                            );
+
+                    }
+
+
+                    if (
+                        eventType ===
+                        "generating"
+                    ) {
+
+                        setStatus(
+                            "KOKORO GENERATING..."
+                        );
+
+                    }
+
+                }
+
+            }
+
+
+            console.log(
+                "FINAL DATA:",
+                finalData
+            );
+
+
+            if (!finalData) {
+
+                throw new Error(
+                    "KOKORO FINISHED WITHOUT AUDIO."
+                );
+
+            }
+
+
+            const result =
+                await handleAudio(
+                    finalData
+                );
+
+
+            if (!result) {
+
+                throw new Error(
+                    "KOKORO RETURNED AUDIO IN AN UNKNOWN FORMAT.\n\n" +
                     JSON.stringify(
-                        first,
+                        finalData,
                         null,
                         2
                     )
@@ -394,72 +926,45 @@ speakButton.addEventListener(
             }
 
 
+            audioURL =
+                result;
+
+
+            audio.src =
+                audioURL;
+
+
             setStatus(
-                "AUDIO RECEIVED. PLAYING..."
+                "VOICE READY."
             );
 
 
-            if (audioPlayer) {
-
-                audioPlayer.pause();
-
-                audioPlayer = null;
-
-            }
+            await audio.play();
 
 
-            audioPlayer =
-                new Audio(audioURL);
+            setStatus(
+                "PLAYING."
+            );
 
-
-            audioPlayer.onended =
-                () => {
-
-                    setStatus(
-                        "COMPLETE."
-                    );
-
-                    speakButton.disabled =
-                        false;
-
-                };
-
-
-            audioPlayer.onerror =
-                (error) => {
-
-                    console.error(
-                        "AUDIO ERROR:",
-                        error
-                    );
-
-                    setStatus(
-                        "AUDIO PLAYBACK FAILED."
-                    );
-
-                    speakButton.disabled =
-                        false;
-
-                };
-
-
-            await audioPlayer.play();
 
         }
 
         catch (error) {
 
             console.error(
-                "KOKORO GENERATION ERROR:",
+                "KOKORO ERROR:",
                 error
             );
 
 
             setStatus(
-                "GENERATION FAILED.\n\n" +
+                "FAILED.\n\n" +
                 error.message
             );
 
+        }
+
+        finally {
 
             speakButton.disabled =
                 false;
@@ -472,4 +977,5 @@ speakButton.addEventListener(
 </script>
 
 </body>
+
 </html>
