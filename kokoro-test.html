@@ -1,441 +1,86 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>KOKORO SERVER TEST</title>
-
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KOKORO TEST V2</title>
 <style>
-* {
-    box-sizing: border-box;
-}
-
 body {
-    margin: 0;
-    min-height: 100vh;
-    background: #172218;
-    color: #dce9a8;
-    font-family: monospace;
-    padding: 30px;
+  background:#172218;
+  color:#dce9a8;
+  font-family:monospace;
+  padding:30px;
 }
-
-.wrap {
-    width: 100%;
-    max-width: 760px;
-    margin: auto;
-    border: 8px solid #0b100c;
-    background: #1d2b20;
-    box-shadow: 0 0 0 3px #9aaa62 inset;
-    padding: 40px;
-}
-
 h1 {
-    font-size: clamp(32px, 8vw, 64px);
-    letter-spacing: 6px;
-    margin: 0 0 10px;
+  font-size:40px;
 }
-
-.subtitle {
-    font-size: 20px;
-    margin-bottom: 35px;
-}
-
-textarea,
-select,
 button {
-    width: 100%;
-    background: #0d0f0d;
-    color: #dce9a8;
-    border: 4px solid #91a85c;
-    font: inherit;
-    font-size: 18px;
-    padding: 18px;
-    margin-bottom: 20px;
-}
-
-textarea {
-    min-height: 260px;
-    resize: vertical;
-}
-
-button {
-    cursor: pointer;
-    font-weight: bold;
-    letter-spacing: 2px;
-}
-
-button:active {
-    transform: translateY(2px);
-}
-
-.status {
-    border: 4px solid #91a85c;
-    padding: 20px;
-    margin-top: 10px;
-    min-height: 90px;
-    font-size: 18px;
-}
-
-audio {
-    width: 100%;
-    margin-top: 20px;
-}
-
-.label {
-    display: block;
-    margin: 12px 0 8px;
-    font-size: 18px;
-}
-
-@media (max-width: 600px) {
-    body {
-        padding: 12px;
-    }
-
-    .wrap {
-        padding: 22px;
-        border-width: 6px;
-    }
-
-    textarea {
-        min-height: 220px;
-    }
+  padding:20px;
+  width:100%;
+  font:inherit;
+  background:#111;
+  color:#dce9a8;
+  border:3px solid #9aaa62;
 }
 </style>
 </head>
 
 <body>
 
-<div class="wrap">
+<h1>KOKORO TEST V2</h1>
 
-    <h1>KOKORO SERVER TEST</h1>
+<p id="status">NEW CODE LOADED.</p>
 
-    <div class="subtitle">
-        SERVER-SIDE NEURAL VOICE
-    </div>
+<button id="test">TEST KOKORO</button>
 
-    <label class="label">TEXT</label>
+<script>
 
-    <textarea id="text">The ancient door slowly opens. Somewhere beyond it, a forgotten kingdom waits in the darkness.</textarea>
+document.getElementById("test").onclick = async function() {
 
-    <label class="label">VOICE</label>
+  const status = document.getElementById("status");
 
-    <select id="voice">
-        <option value="af_heart">Heart — American Female</option>
-        <option value="af_bella">Bella — American Female</option>
-        <option value="af_nicole">Nicole — American Female</option>
-        <option value="af_sarah">Sarah — American Female</option>
-        <option value="am_adam">Adam — American Male</option>
-        <option value="am_michael">Michael — American Male</option>
-        <option value="bf_emma">Emma — British Female</option>
-        <option value="bf_isabella">Isabella — British Female</option>
-        <option value="bm_george">George — British Male</option>
-        <option value="bm_lewis">Lewis — British Male</option>
-    </select>
+  status.textContent = "CONNECTING...";
 
-    <label class="label">SPEED</label>
+  try {
 
-    <select id="speed">
-        <option value="0.8">0.80x</option>
-        <option value="0.9">0.90x</option>
-        <option value="1" selected>1.00x</option>
-        <option value="1.1">1.10x</option>
-        <option value="1.2">1.20x</option>
-    </select>
-
-    <button id="speak">
-        ▶ SPEAK
-    </button>
-
-    <div class="status" id="status">
-        STATUS: READY.
-    </div>
-
-    <audio id="audio" controls></audio>
-
-</div>
-
-<script type="module">
-
-const SPACE =
-    "https://hexgrad-kokoro-tts.hf.space";
-
-const text =
-    document.getElementById("text");
-
-const voice =
-    document.getElementById("voice");
-
-const speed =
-    document.getElementById("speed");
-
-const speak =
-    document.getElementById("speak");
-
-const status =
-    document.getElementById("status");
-
-const audio =
-    document.getElementById("audio");
-
-
-function setStatus(message) {
+    const response = await fetch(
+      "https://hexgrad-kokoro-tts.hf.space/gradio_api/call/generate_first",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          data: [
+            "Hello. This is a Kokoro voice test.",
+            "af_heart",
+            1,
+            false
+          ]
+        })
+      }
+    );
 
     status.textContent =
-        "STATUS: " + message.toUpperCase();
+      "SERVER RESPONSE: HTTP " + response.status;
 
-}
+    const data = await response.text();
 
+    console.log(data);
 
-async function generateSpeech() {
+  } catch(error) {
 
-    const input =
-        text.value.trim();
+    status.textContent =
+      "ERROR: " + error.message;
 
-    if (!input) {
+    console.error(error);
 
-        setStatus("ENTER SOME TEXT.");
+  }
 
-        return;
-    }
-
-    speak.disabled = true;
-
-    speak.textContent =
-        "◆ GENERATING ◆";
-
-    setStatus("CONNECTING TO KOKORO...");
-
-    try {
-
-        /*
-         * Use the Gradio REST API directly.
-         * This avoids the client-side app-config
-         * resolution problem.
-         */
-
-        const response =
-            await fetch(
-                SPACE + "/gradio_api/call/generate_first",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        data: [
-                            input,
-                            voice.value,
-                            Number(speed.value),
-                            false
-                        ]
-                    })
-                }
-            );
-
-        if (!response.ok) {
-
-            throw new Error(
-                "HTTP " + response.status
-            );
-        }
-
-        const result =
-            await response.json();
-
-        if (!result.event_id) {
-
-            throw new Error(
-                "NO EVENT ID RETURNED"
-            );
-        }
-
-        setStatus("VOICE GENERATING...");
-
-        const eventURL =
-            SPACE +
-            "/gradio_api/call/generate_first/" +
-            result.event_id;
-
-        const stream =
-            await fetch(eventURL);
-
-        if (!stream.ok) {
-
-            throw new Error(
-                "EVENT HTTP " +
-                stream.status
-            );
-        }
-
-        const reader =
-            stream.body.getReader();
-
-        const decoder =
-            new TextDecoder();
-
-        let buffer = "";
-
-        while (true) {
-
-            const {
-                value,
-                done
-            } =
-                await reader.read();
-
-            if (done) {
-                break;
-            }
-
-            buffer +=
-                decoder.decode(
-                    value,
-                    { stream: true }
-                );
-
-            const lines =
-                buffer.split("\n");
-
-            buffer =
-                lines.pop();
-
-            for (const line of lines) {
-
-                if (
-                    !line.startsWith("data:")
-                ) {
-                    continue;
-                }
-
-                const raw =
-                    line
-                        .replace(/^data:\s*/, "")
-                        .trim();
-
-                if (!raw) {
-                    continue;
-                }
-
-                let data;
-
-                try {
-
-                    data =
-                        JSON.parse(raw);
-
-                } catch {
-
-                    continue;
-                }
-
-                /*
-                 * Gradio returns the generated
-                 * audio as the first output.
-                 */
-
-                if (
-                    Array.isArray(data) &&
-                    data.length > 0
-                ) {
-
-                    const output =
-                        data[0];
-
-                    let audioURL = null;
-
-                    if (
-                        typeof output ===
-                        "string"
-                    ) {
-
-                        audioURL =
-                            output;
-                    }
-
-                    else if (
-                        output &&
-                        output.url
-                    ) {
-
-                        audioURL =
-                            output.url;
-                    }
-
-                    else if (
-                        output &&
-                        output.path
-                    ) {
-
-                        audioURL =
-                            SPACE +
-                            "/file=" +
-                            encodeURIComponent(
-                                output.path
-                            );
-                    }
-
-                    if (audioURL) {
-
-                        audio.src =
-                            audioURL;
-
-                        audio.load();
-
-                        setStatus(
-                            "VOICE READY."
-                        );
-
-                        speak.textContent =
-                            "▶ SPEAK";
-
-                        speak.disabled =
-                            false;
-
-                        return;
-                    }
-                }
-            }
-        }
-
-        throw new Error(
-            "NO AUDIO RETURNED"
-        );
-
-    }
-
-    catch (error) {
-
-        console.error(error);
-
-        setStatus(
-            "GENERATION FAILED — " +
-            error.message
-        );
-
-    }
-
-    finally {
-
-        speak.disabled =
-            false;
-
-        speak.textContent =
-            "▶ SPEAK";
-    }
-}
-
-
-speak.addEventListener(
-    "click",
-    generateSpeech
-);
+};
 
 </script>
 
 </body>
 </html>
+
