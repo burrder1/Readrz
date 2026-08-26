@@ -1,19 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
-
-<title>Kokoro Server Test</title>
+<title>KOKORO SERVER TEST</title>
 
 <style>
-
 * {
     box-sizing: border-box;
 }
@@ -21,961 +14,428 @@
 body {
     margin: 0;
     min-height: 100vh;
-
-    background:
-        #202b20;
-
-    color:
-        #d7e6a5;
-
-    font-family:
-        monospace;
-
-    display:
-        flex;
-
-    align-items:
-        center;
-
-    justify-content:
-        center;
-
-    padding:
-        20px;
+    background: #172218;
+    color: #dce9a8;
+    font-family: monospace;
+    padding: 30px;
 }
 
-.box {
-
-    width:
-        100%;
-
-    max-width:
-        650px;
-
-    border:
-        4px solid #8fa85b;
-
-    padding:
-        24px;
-
-    box-shadow:
-        0 0 0 6px #111;
+.wrap {
+    width: 100%;
+    max-width: 760px;
+    margin: auto;
+    border: 8px solid #0b100c;
+    background: #1d2b20;
+    box-shadow: 0 0 0 3px #9aaa62 inset;
+    padding: 40px;
 }
 
 h1 {
+    font-size: clamp(32px, 8vw, 64px);
+    letter-spacing: 6px;
+    margin: 0 0 10px;
+}
 
-    margin-top:
-        0;
-
-    letter-spacing:
-        4px;
-
-    line-height:
-        1.2;
+.subtitle {
+    font-size: 20px;
+    margin-bottom: 35px;
 }
 
 textarea,
 select,
 button {
-
-    width:
-        100%;
-
-    margin-top:
-        14px;
-
-    padding:
-        16px;
-
-    font:
-        inherit;
+    width: 100%;
+    background: #0d0f0d;
+    color: #dce9a8;
+    border: 4px solid #91a85c;
+    font: inherit;
+    font-size: 18px;
+    padding: 18px;
+    margin-bottom: 20px;
 }
 
 textarea {
-
-    min-height:
-        170px;
-
-    background:
-        #111;
-
-    color:
-        #d7e6a5;
-
-    border:
-        2px solid #8fa85b;
-
-    resize:
-        vertical;
-}
-
-select,
-button {
-
-    background:
-        #111;
-
-    color:
-        #d7e6a5;
-
-    border:
-        2px solid #8fa85b;
+    min-height: 260px;
+    resize: vertical;
 }
 
 button {
-
-    cursor:
-        pointer;
-
-    font-weight:
-        bold;
+    cursor: pointer;
+    font-weight: bold;
+    letter-spacing: 2px;
 }
 
-button:disabled {
-
-    opacity:
-        0.45;
-
-    cursor:
-        not-allowed;
+button:active {
+    transform: translateY(2px);
 }
 
-#status {
-
-    margin-top:
-        22px;
-
-    white-space:
-        pre-wrap;
-
-    line-height:
-        1.6;
+.status {
+    border: 4px solid #91a85c;
+    padding: 20px;
+    margin-top: 10px;
+    min-height: 90px;
+    font-size: 18px;
 }
 
 audio {
-
-    width:
-        100%;
-
-    margin-top:
-        20px;
+    width: 100%;
+    margin-top: 20px;
 }
 
+.label {
+    display: block;
+    margin: 12px 0 8px;
+    font-size: 18px;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 12px;
+    }
+
+    .wrap {
+        padding: 22px;
+        border-width: 6px;
+    }
+
+    textarea {
+        min-height: 220px;
+    }
+}
 </style>
-
 </head>
-
 
 <body>
 
+<div class="wrap">
 
-<div class="box">
+    <h1>KOKORO SERVER TEST</h1>
 
-<h1>
-KOKORO SERVER TEST
-</h1>
+    <div class="subtitle">
+        SERVER-SIDE NEURAL VOICE
+    </div>
 
-<p>
-OFFICIAL KOKORO SERVER
-</p>
+    <label class="label">TEXT</label>
 
+    <textarea id="text">The ancient door slowly opens. Somewhere beyond it, a forgotten kingdom waits in the darkness.</textarea>
 
-<textarea id="text">The ancient door slowly opens. Somewhere beyond it, a forgotten kingdom waits in the darkness.</textarea>
+    <label class="label">VOICE</label>
 
+    <select id="voice">
+        <option value="af_heart">Heart — American Female</option>
+        <option value="af_bella">Bella — American Female</option>
+        <option value="af_nicole">Nicole — American Female</option>
+        <option value="af_sarah">Sarah — American Female</option>
+        <option value="am_adam">Adam — American Male</option>
+        <option value="am_michael">Michael — American Male</option>
+        <option value="bf_emma">Emma — British Female</option>
+        <option value="bf_isabella">Isabella — British Female</option>
+        <option value="bm_george">George — British Male</option>
+        <option value="bm_lewis">Lewis — British Male</option>
+    </select>
 
-<select id="voice">
+    <label class="label">SPEED</label>
 
-<option value="af_heart">
-Heart — American Female
-</option>
+    <select id="speed">
+        <option value="0.8">0.80x</option>
+        <option value="0.9">0.90x</option>
+        <option value="1" selected>1.00x</option>
+        <option value="1.1">1.10x</option>
+        <option value="1.2">1.20x</option>
+    </select>
 
-<option value="af_bella">
-Bella — American Female
-</option>
+    <button id="speak">
+        ▶ SPEAK
+    </button>
 
-<option value="af_sarah">
-Sarah — American Female
-</option>
+    <div class="status" id="status">
+        STATUS: READY.
+    </div>
 
-<option value="af_nicole">
-Nicole — American Female
-</option>
-
-<option value="af_sky">
-Sky — American Female
-</option>
-
-<option value="am_adam">
-Adam — American Male
-</option>
-
-<option value="am_michael">
-Michael — American Male
-</option>
-
-</select>
-
-
-<button id="speakButton">
-▶ SPEAK
-</button>
-
-
-<div id="status">
-STATUS: READY.
-</div>
-
-
-<audio
-    id="audio"
-    controls
-    playsinline
-></audio>
-
+    <audio id="audio" controls></audio>
 
 </div>
 
-
-<script>
-
+<script type="module">
 
 const SPACE =
     "https://hexgrad-kokoro-tts.hf.space";
 
-
-const API =
-    "/gradio_api/call/generate";
-
-
-const textBox =
+const text =
     document.getElementById("text");
 
-
-const voiceBox =
+const voice =
     document.getElementById("voice");
 
+const speed =
+    document.getElementById("speed");
 
-const speakButton =
-    document.getElementById("speakButton");
-
+const speak =
+    document.getElementById("speak");
 
 const status =
     document.getElementById("status");
-
 
 const audio =
     document.getElementById("audio");
 
 
-let audioURL =
-    null;
-
-
-function setStatus(text) {
+function setStatus(message) {
 
     status.textContent =
-        "STATUS: " + text;
+        "STATUS: " + message.toUpperCase();
 
 }
 
 
-/* =========================================
-   WAV CREATOR
-========================================= */
+async function generateSpeech() {
 
-function makeWav(
-    sampleRate,
-    samples
-) {
+    const input =
+        text.value.trim();
 
-    const buffer =
-        new ArrayBuffer(
-            44 + samples.length * 2
-        );
+    if (!input) {
 
-    const view =
-        new DataView(buffer);
+        setStatus("ENTER SOME TEXT.");
 
-
-    function writeString(
-        offset,
-        string
-    ) {
-
-        for (
-            let i = 0;
-            i < string.length;
-            i++
-        ) {
-
-            view.setUint8(
-                offset + i,
-                string.charCodeAt(i)
-            );
-
-        }
-
+        return;
     }
 
-
-    writeString(
-        0,
-        "RIFF"
-    );
-
-
-    view.setUint32(
-        4,
-        36 + samples.length * 2,
-        true
-    );
-
-
-    writeString(
-        8,
-        "WAVE"
-    );
-
-
-    writeString(
-        12,
-        "fmt "
-    );
-
-
-    view.setUint32(
-        16,
-        16,
-        true
-    );
-
-
-    view.setUint16(
-        20,
-        1,
-        true
-    );
-
-
-    view.setUint16(
-        22,
-        1,
-        true
-    );
-
-
-    view.setUint32(
-        24,
-        sampleRate,
-        true
-    );
-
-
-    view.setUint32(
-        28,
-        sampleRate * 2,
-        true
-    );
-
-
-    view.setUint16(
-        32,
-        2,
-        true
-    );
-
-
-    view.setUint16(
-        34,
-        16,
-        true
-    );
-
-
-    writeString(
-        36,
-        "data"
-    );
-
-
-    view.setUint32(
-        40,
-        samples.length * 2,
-        true
-    );
-
-
-    let offset =
-        44;
-
-
-    for (
-        let i = 0;
-        i < samples.length;
-        i++
-    ) {
-
-        let sample =
-            Number(samples[i]);
-
-
-        sample =
-            Math.max(
-                -1,
-                Math.min(
-                    1,
-                    sample
-                )
-            );
-
-
-        const intSample =
-            sample < 0
-                ? sample * 32768
-                : sample * 32767;
-
-
-        view.setInt16(
-            offset,
-            intSample,
-            true
-        );
-
-
-        offset += 2;
-
-    }
-
-
-    return new Blob(
-        [buffer],
-        {
-            type:
-                "audio/wav"
-        }
-    );
-
-}
-
-
-/* =========================================
-   FIND AUDIO INSIDE GRADIO RESULT
-========================================= */
-
-async function handleAudio(
-    value
-) {
-
-    console.log(
-        "KOKORO AUDIO RESULT:",
-        value
-    );
-
-
-    /*
-       Case 1:
-       Gradio returns a file object.
-    */
-
-    if (
-        value &&
-        typeof value === "object" &&
-        !Array.isArray(value)
-    ) {
-
-        if (value.url) {
-
-            return value.url;
-
-        }
-
-        if (value.path) {
-
-            return (
-                SPACE +
-                "/gradio_api/file=" +
-                encodeURIComponent(
-                    value.path
-                )
-            );
-
-        }
-
-    }
-
-
-    /*
-       Case 2:
-       Gradio returns:
-
-       [sampleRate, samples]
-    */
-
-    if (
-        Array.isArray(value) &&
-        value.length === 2 &&
-        typeof value[0] === "number" &&
-        Array.isArray(value[1])
-    ) {
-
-        const blob =
-            makeWav(
-                value[0],
-                value[1]
-            );
-
-
-        return URL.createObjectURL(
-            blob
-        );
-
-    }
-
-
-    /*
-       Case 3:
-       Nested audio result.
-    */
-
-    if (
-        Array.isArray(value)
-    ) {
-
-        for (
-            const item of value
-        ) {
-
-            try {
-
-                const result =
-                    await handleAudio(
-                        item
-                    );
-
-
-                if (result) {
-
-                    return result;
-
+    speak.disabled = true;
+
+    speak.textContent =
+        "◆ GENERATING ◆";
+
+    setStatus("CONNECTING TO KOKORO...");
+
+    try {
+
+        /*
+         * Use the Gradio REST API directly.
+         * This avoids the client-side app-config
+         * resolution problem.
+         */
+
+        const response =
+            await fetch(
+                SPACE + "/gradio_api/call/generate_first",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        data: [
+                            input,
+                            voice.value,
+                            Number(speed.value),
+                            false
+                        ]
+                    })
                 }
+            );
 
-            }
+        if (!response.ok) {
 
-            catch {
-
-                continue;
-
-            }
-
+            throw new Error(
+                "HTTP " + response.status
+            );
         }
 
-    }
+        const result =
+            await response.json();
 
+        if (!result.event_id) {
 
-    return null;
-
-}
-
-
-/* =========================================
-   SPEAK
-========================================= */
-
-speakButton.addEventListener(
-    "click",
-    async () => {
-
-        const text =
-            textBox.value.trim();
-
-
-        if (!text) {
-
-            setStatus(
-                "ENTER SOME TEXT."
+            throw new Error(
+                "NO EVENT ID RETURNED"
             );
-
-            return;
-
         }
 
+        setStatus("VOICE GENERATING...");
 
-        speakButton.disabled =
-            true;
+        const eventURL =
+            SPACE +
+            "/gradio_api/call/generate_first/" +
+            result.event_id;
 
+        const stream =
+            await fetch(eventURL);
 
-        setStatus(
-            "CONTACTING KOKORO..."
-        );
+        if (!stream.ok) {
 
-
-        if (audioURL) {
-
-            URL.revokeObjectURL(
-                audioURL
+            throw new Error(
+                "EVENT HTTP " +
+                stream.status
             );
-
-            audioURL =
-                null;
-
         }
 
+        const reader =
+            stream.body.getReader();
 
-        audio.removeAttribute(
-            "src"
-        );
+        const decoder =
+            new TextDecoder();
 
+        let buffer = "";
 
-        try {
+        while (true) {
 
+            const {
+                value,
+                done
+            } =
+                await reader.read();
 
-            /*
-             * Current official Kokoro API:
-             *
-             * text
-             * voice
-             * speed
-             * use_gpu
-             */
-
-            const response =
-                await fetch(
-                    SPACE + API,
-                    {
-                        method:
-                            "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body:
-                            JSON.stringify({
-
-                                data: [
-
-                                    text,
-
-                                    voiceBox.value,
-
-                                    1,
-
-                                    false
-
-                                ]
-
-                            })
-
-                    }
-                );
-
-
-            if (!response.ok) {
-
-                throw new Error(
-                    "SERVER HTTP " +
-                    response.status
-                );
-
+            if (done) {
+                break;
             }
 
-
-            const start =
-                await response.json();
-
-
-            console.log(
-                "JOB STARTED:",
-                start
-            );
-
-
-            if (!start.event_id) {
-
-                throw new Error(
-                    "NO EVENT ID RETURNED."
-                );
-
-            }
-
-
-            setStatus(
-                "KOKORO IS GENERATING..."
-            );
-
-
-            const resultResponse =
-                await fetch(
-
-                    SPACE +
-                    API +
-                    "/" +
-                    start.event_id
-
-                );
-
-
-            if (!resultResponse.ok) {
-
-                throw new Error(
-                    "RESULT HTTP " +
-                    resultResponse.status
-                );
-
-            }
-
-
-            const reader =
-                resultResponse.body.getReader();
-
-
-            const decoder =
-                new TextDecoder();
-
-
-            let buffer =
-                "";
-
-
-            let finalData =
-                null;
-
-
-            while (true) {
-
-
-                const {
+            buffer +=
+                decoder.decode(
                     value,
-                    done
-                } =
-                    await reader.read();
+                    { stream: true }
+                );
 
+            const lines =
+                buffer.split("\n");
 
-                if (done) {
+            buffer =
+                lines.pop();
 
-                    break;
+            for (const line of lines) {
 
+                if (
+                    !line.startsWith("data:")
+                ) {
+                    continue;
                 }
 
+                const raw =
+                    line
+                        .replace(/^data:\s*/, "")
+                        .trim();
 
-                buffer +=
-                    decoder.decode(
-                        value,
-                        {
-                            stream:
-                                true
-                        }
-                    );
+                if (!raw) {
+                    continue;
+                }
 
+                let data;
 
-                const events =
-                    buffer.split(
-                        "\n\n"
-                    );
+                try {
 
+                    data =
+                        JSON.parse(raw);
 
-                buffer =
-                    events.pop();
+                } catch {
 
+                    continue;
+                }
 
-                for (
-                    const event
-                    of events
+                /*
+                 * Gradio returns the generated
+                 * audio as the first output.
+                 */
+
+                if (
+                    Array.isArray(data) &&
+                    data.length > 0
                 ) {
 
+                    const output =
+                        data[0];
 
-                    console.log(
-                        "SSE EVENT:",
-                        event
-                    );
-
-
-                    const lines =
-                        event.split(
-                            "\n"
-                        );
-
-
-                    let eventType =
-                        "";
-
-
-                    let dataText =
-                        "";
-
-
-                    for (
-                        const line
-                        of lines
-                    ) {
-
-                        if (
-                            line.startsWith(
-                                "event:"
-                            )
-                        ) {
-
-                            eventType =
-                                line
-                                    .slice(
-                                        6
-                                    )
-                                    .trim();
-
-                        }
-
-
-                        if (
-                            line.startsWith(
-                                "data:"
-                            )
-                        ) {
-
-                            dataText +=
-                                line
-                                    .slice(
-                                        5
-                                    )
-                                    .trim();
-
-                        }
-
-                    }
-
-
-                    console.log(
-                        "EVENT TYPE:",
-                        eventType
-                    );
-
+                    let audioURL = null;
 
                     if (
-                        eventType ===
-                        "error"
+                        typeof output ===
+                        "string"
                     ) {
 
-                        throw new Error(
-                            dataText
-                        );
-
+                        audioURL =
+                            output;
                     }
 
-
-                    if (
-                        eventType ===
-                        "complete"
+                    else if (
+                        output &&
+                        output.url
                     ) {
 
-                        finalData =
-                            JSON.parse(
-                                dataText
+                        audioURL =
+                            output.url;
+                    }
+
+                    else if (
+                        output &&
+                        output.path
+                    ) {
+
+                        audioURL =
+                            SPACE +
+                            "/file=" +
+                            encodeURIComponent(
+                                output.path
                             );
-
                     }
 
+                    if (audioURL) {
 
-                    if (
-                        eventType ===
-                        "generating"
-                    ) {
+                        audio.src =
+                            audioURL;
+
+                        audio.load();
 
                         setStatus(
-                            "KOKORO GENERATING..."
+                            "VOICE READY."
                         );
 
+                        speak.textContent =
+                            "▶ SPEAK";
+
+                        speak.disabled =
+                            false;
+
+                        return;
                     }
-
                 }
-
             }
-
-
-            console.log(
-                "FINAL DATA:",
-                finalData
-            );
-
-
-            if (!finalData) {
-
-                throw new Error(
-                    "KOKORO FINISHED WITHOUT AUDIO."
-                );
-
-            }
-
-
-            const result =
-                await handleAudio(
-                    finalData
-                );
-
-
-            if (!result) {
-
-                throw new Error(
-                    "KOKORO RETURNED AUDIO IN AN UNKNOWN FORMAT.\n\n" +
-                    JSON.stringify(
-                        finalData,
-                        null,
-                        2
-                    )
-                );
-
-            }
-
-
-            audioURL =
-                result;
-
-
-            audio.src =
-                audioURL;
-
-
-            setStatus(
-                "VOICE READY."
-            );
-
-
-            await audio.play();
-
-
-            setStatus(
-                "PLAYING."
-            );
-
-
         }
 
-        catch (error) {
-
-            console.error(
-                "KOKORO ERROR:",
-                error
-            );
-
-
-            setStatus(
-                "FAILED.\n\n" +
-                error.message
-            );
-
-        }
-
-        finally {
-
-            speakButton.disabled =
-                false;
-
-        }
+        throw new Error(
+            "NO AUDIO RETURNED"
+        );
 
     }
+
+    catch (error) {
+
+        console.error(error);
+
+        setStatus(
+            "GENERATION FAILED — " +
+            error.message
+        );
+
+    }
+
+    finally {
+
+        speak.disabled =
+            false;
+
+        speak.textContent =
+            "▶ SPEAK";
+    }
+}
+
+
+speak.addEventListener(
+    "click",
+    generateSpeech
 );
 
 </script>
 
 </body>
-
 </html>
