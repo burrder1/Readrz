@@ -1,132 +1,71 @@
-/* =========================================
-   PAGE READER
-   OCR + TEXT TO SPEECH
-   ========================================= */
-
-const synth = window.speechSynthesis;
-
-
-/* =========================================
-   APP STATE
-   ========================================= */
+const MAX_PAGES = 10;
 
 let pages = [];
 let currentPage = 0;
 let voices = [];
-let speaking = false;
-let worker = null;
+let isSpeaking = false;
 
-
-/* =========================================
-   ELEMENTS
-   ========================================= */
-
-const filmstrip = document.getElementById("filmstrip");
+const cameraInput = document.getElementById("cameraInput");
+const scanBtn = document.getElementById("scanBtn");
 
 const pageCount = document.getElementById("pageCount");
 const pageTotal = document.getElementById("pageTotal");
 
-const voiceSelect = document.getElementById("voiceSelect");
+const textBuffer = document.getElementById("textBuffer");
+const filmstrip = document.getElementById("filmstrip");
+const filmstripEmpty = document.getElementById("filmstripEmpty");
 
+const voiceSelect = document.getElementById("voiceSelect");
 const rateSlider = document.getElementById("rateSlider");
 const rateValue = document.getElementById("rateValue");
 
-const statusLine = document.getElementById("statusLine");
-const scanStatus = document.getElementById("scanStatus");
-
-const cameraInput = document.getElementById("cameraInput");
-
-const scanBtn = document.getElementById("scanBtn");
-
-const prevBtn = document.getElementById("prevBtn");
-const backBtn = document.getElementById("backBtn");
-
 const playBtn = document.getElementById("playBtn");
-
+const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
-const nextPageBtn = document.getElementById("nextPageBtn");
+
+const previousWordBtn = document.getElementById("previousWordBtn");
+const nextWordBtn = document.getElementById("nextWordBtn");
 
 const clearBtn = document.getElementById("clearBtn");
 
-const progressFill = document.getElementById("progressFill");
-const progressText = document.getElementById("progressText");
+const statusLine = document.getElementById("statusLine");
+const ocrProgress = document.getElementById("ocrProgress");
+const ocrPercent = document.getElementById("ocrPercent");
 
 
-/* =========================================
-   INITIALIZE
-   ========================================= */
+/* -----------------------------
+   STARTUP
+----------------------------- */
 
-function init() {
+pageTotal.textContent = String(MAX_PAGES).padStart(2, "0");
 
-  pageTotal.textContent = "10";
+loadVoices();
 
-  updatePageCounter();
-
-  loadVoices();
-
-  if ("onvoiceschanged" in synth) {
-    synth.onvoiceschanged = loadVoices;
-  }
-
-  updateStatus("READY.");
-
-  rateSlider.addEventListener("input", updateRate);
-
-  scanBtn.addEventListener("click", openCamera);
-
-  cameraInput.addEventListener("change", handleImage);
-
-  playBtn.addEventListener("click", toggleSpeech);
-
-  prevBtn.addEventListener("click", previousPage);
-
-  backBtn.addEventListener("click", previousPage);
-
-  nextBtn.addEventListener("click", nextPage);
-
-  nextPageBtn.addEventListener("click", nextPage);
-
-  clearBtn.addEventListener("click", clearPages);
+if ("speechSynthesis" in window) {
+  speechSynthesis.onvoiceschanged = loadVoices;
 }
 
-
-/* =========================================
-   STATUS
-   ========================================= */
-
-function updateStatus(message) {
-
-  statusLine.textContent = message;
-
-  scanStatus.textContent = message
-    .toUpperCase()
-    .substring(0, 18);
-}
+updateDisplay();
 
 
-/* =========================================
+/* -----------------------------
    VOICES
-   ========================================= */
+----------------------------- */
 
 function loadVoices() {
 
-  voices = synth.getVoices();
-
-  voiceSelect.innerHTML = "";
-
-  if (!voices.length) {
-
-    const option = document.createElement("option");
-
-    option.textContent = "DEFAULT";
-
-    option.value = "";
-
-    voiceSelect.appendChild(option);
-
+  if (!("speechSynthesis" in window)) {
+    voiceSelect.innerHTML = "<option>Speech unavailable</option>";
     return;
   }
 
+  voices = speechSynthesis.getVoices();
+
+  if (!voices.length) {
+    return;
+  }
+
+  voiceSelect.innerHTML = "";
 
   voices.forEach((voice, index) => {
 
@@ -135,44 +74,32 @@ function loadVoices() {
     option.value = index;
 
     option.textContent =
-      `${voice.name} (${voice.lang})`;
+      `${voice.name} — ${voice.lang}`;
 
     voiceSelect.appendChild(option);
-
   });
+
+  const preferred =
+    voices.findIndex(v =>
+      /en-US/i.test(v.lang)
+    );
+
+  if (preferred >= 0) {
+    voiceSelect.value = preferred;
+  }
 }
 
 
-/* =========================================
-   SPEED
-   ========================================= */
+/* -----------------------------
+   SCAN BUTTON
+----------------------------- */
 
-function updateRate() {
-
-  const rate = Number(rateSlider.value);
-
-  rateValue.textContent =
-    `${rate.toFixed(2)}x`;
-}
-
-
-/* =========================================
-   CAMERA
-   ========================================= */
-
-function openCamera() {
-
-  cameraInput.value = "";
-
+scanBtn.addEventListener("click", () => {
   cameraInput.click();
-}
+});
 
 
-/* =========================================
-   IMAGE PROCESSING
-   ========================================= */
-
-async function handleImage(event) {
+cameraInput.addEventListener("change", async event => {
 
   const file = event.target.files[0];
 
@@ -180,450 +107,533 @@ async function handleImage(event) {
     return;
   }
 
+  await scanPage(file);
 
-  if (pages.length >= 10) {
+  cameraInput.value = "";
+});
 
-    updateStatus("PAGE LIMIT REACHED.");
+
+/* -----------------------------
+   OCR
+----------------------------- */
+
+async function scanPage(file) {
+
+  if (pages.length >= MAX_PAGES) {
+
+    setStatus("INVENTORY FULL.");
 
     return;
   }
 
+  setStatus("SCANNING PAGE...");
+  setProgress(0);
+
+  scanBtn.disabled = true;
+  scanBtn.textContent = "◆ SCANNING ◆";
 
   try {
 
-    updateStatus("LOADING IMAGE...");
-
-    setProgress(5);
-
-
-    const imageURL =
-      URL.createObjectURL(file);
-
-
-    /*
-      Make sure Tesseract exists.
-    */
-
-    if (!window.Tesseract) {
-
-      throw new Error(
-        "Tesseract OCR failed to load."
-      );
-
+    if (typeof Tesseract === "undefined") {
+      throw new Error("OCR ENGINE NOT LOADED");
     }
 
-
-    updateStatus("STARTING OCR...");
-
-
-    /*
-      Create OCR worker.
-    */
-
-    worker = await Tesseract.createWorker(
+    const result = await Tesseract.recognize(
+      file,
       "eng",
-      1,
       {
         logger: message => {
 
-          if (message.status === "recognizing text") {
+          if (
+            message.status === "recognizing text" &&
+            typeof message.progress === "number"
+          ) {
 
-            const progress =
+            const percent =
               Math.round(message.progress * 100);
 
-            setProgress(progress);
+            setProgress(percent);
 
-            updateStatus(
-              `SCANNING ${progress}%`
-            );
+            setStatus(`READING PAGE... ${percent}%`);
           }
 
+          else if (message.status) {
+
+            const label =
+              message.status
+                .replace(/_/g, " ")
+                .toUpperCase();
+
+            setStatus(label + "...");
+          }
         }
       }
     );
 
-
-    /*
-      Perform OCR.
-    */
-
-    const result =
-      await worker.recognize(imageURL);
-
-
     const text =
-      result.data.text.trim();
-
-
-    await worker.terminate();
-
-    worker = null;
-
-    URL.revokeObjectURL(imageURL);
-
+      result.data.text
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
 
     if (!text) {
 
-      updateStatus(
-        "NO TEXT FOUND."
-      );
-
-      setProgress(0);
+      setStatus("NO TEXT FOUND.");
 
       return;
     }
 
-
-    /*
-      Save page.
-    */
+    const imageURL =
+      URL.createObjectURL(file);
 
     pages.push({
       text: text,
       image: imageURL
     });
 
-
-    currentPage =
-      pages.length - 1;
-
-
-    updatePageCounter();
-
-    displayCurrentPage();
+    currentPage = pages.length - 1;
 
     setProgress(100);
+    setStatus("PAGE READ. QUEST UPDATED.");
 
-    updateStatus(
-      "SCAN COMPLETE."
-    );
-
-
-    /*
-      Reset progress after a moment.
-    */
-
-    setTimeout(() => {
-
-      setProgress(0);
-
-    }, 1200);
-
-
-  } catch (error) {
-
-    console.error(error);
-
-    if (worker) {
-
-      try {
-        await worker.terminate();
-      } catch {}
-    }
-
-    worker = null;
-
-    updateStatus(
-      "OCR ERROR."
-    );
-
-    setProgress(0);
+    updateDisplay();
 
   }
 
+  catch (error) {
+
+    console.error(error);
+
+    setStatus("OCR FAILED.");
+
+    textBuffer.textContent =
+      "THE PAGE COULD NOT BE READ.\n\nTRY AGAIN WITH BETTER LIGHT.";
+  }
+
+  finally {
+
+    scanBtn.disabled = false;
+    scanBtn.textContent = "▲ SCAN PAGE";
+  }
 }
 
 
-/* =========================================
-   DISPLAY PAGE
-   ========================================= */
+/* -----------------------------
+   DISPLAY
+----------------------------- */
 
-function displayCurrentPage() {
+function updateDisplay() {
+
+  const number =
+    pages.length === 0
+      ? 0
+      : currentPage + 1;
+
+  pageCount.textContent =
+    String(number).padStart(2, "0");
+
+  pageTotal.textContent =
+    String(MAX_PAGES).padStart(2, "0");
+
+  renderText();
+  renderFilmstrip();
+}
+
+
+function renderText() {
 
   if (!pages.length) {
 
-    filmstrip.innerHTML = `
-      <div class="placeholder">
-        READY_
-      </div>
+    textBuffer.innerHTML = `
+      READY.<span class="cursor">_</span>
+      <br><br>
+      NO PAGES YET.<br><br>
+      SCAN A PAGE TO<br>
+      BEGIN YOUR QUEST.
     `;
 
     return;
   }
 
-
-  const page =
-    pages[currentPage];
-
-
-  filmstrip.textContent =
-    page.text;
-
-
-  /*
-    Add a cursor-like ending.
-  */
-
-  filmstrip.scrollTop = 0;
+  textBuffer.textContent =
+    pages[currentPage].text;
 }
 
 
-/* =========================================
-   PAGE COUNTER
-   ========================================= */
+/* -----------------------------
+   FILMSTRIP
+----------------------------- */
 
-function updatePageCounter() {
+function renderFilmstrip() {
 
-  pageCount.textContent =
-    String(pages.length).padStart(2, "0");
-
-  pageTotal.textContent =
-    "10";
-}
-
-
-/* =========================================
-   SPEECH
-   ========================================= */
-
-function toggleSpeech() {
+  filmstrip.innerHTML = "";
 
   if (!pages.length) {
 
-    updateStatus(
-      "SCAN A PAGE FIRST."
-    );
+    filmstrip.appendChild(filmstripEmpty);
 
     return;
   }
 
+  pages.forEach((page, index) => {
 
-  if (speaking) {
+    const card =
+      document.createElement("div");
 
-    synth.cancel();
+    card.className = "page-card";
 
-    speaking = false;
+    if (index === currentPage) {
+      card.classList.add("active");
+    }
 
-    playBtn.textContent = "▶";
+    const img =
+      document.createElement("img");
 
-    updateStatus("PAUSED.");
+    img.src = page.image;
 
-    return;
-  }
+    img.alt = `Page ${index + 1}`;
 
+    card.appendChild(img);
 
-  speakCurrentPage();
+    card.addEventListener("click", () => {
+
+      stopSpeaking();
+
+      currentPage = index;
+
+      updateDisplay();
+
+      setStatus(
+        `PAGE ${String(index + 1).padStart(2, "0")} LOADED.`
+      );
+    });
+
+    filmstrip.appendChild(card);
+  });
 }
 
 
-/* =========================================
-   READ CURRENT PAGE
-   ========================================= */
+/* -----------------------------
+   PLAY / SPEECH
+----------------------------- */
 
-function speakCurrentPage() {
+playBtn.addEventListener("click", () => {
 
-  const page =
-    pages[currentPage];
+  if (!pages.length) {
 
-
-  if (!page || !page.text) {
-
-    updateStatus(
-      "NO TEXT TO READ."
-    );
+    setStatus("SCAN A PAGE FIRST.");
 
     return;
   }
 
+  if (!("speechSynthesis" in window)) {
 
-  synth.cancel();
+    setStatus("SPEECH NOT SUPPORTED.");
 
-
-  const utterance =
-    new SpeechSynthesisUtterance(
-      page.text
-    );
-
-
-  /*
-    Voice
-  */
-
-  const voiceIndex =
-    Number(voiceSelect.value);
-
-
-  if (
-    !Number.isNaN(voiceIndex) &&
-    voices[voiceIndex]
-  ) {
-
-    utterance.voice =
-      voices[voiceIndex];
-
-    utterance.lang =
-      voices[voiceIndex].lang;
+    return;
   }
 
+  if (isSpeaking) {
 
-  /*
-    Speed
-  */
+    stopSpeaking();
+
+    return;
+  }
+
+  const text =
+    pages[currentPage].text;
+
+  if (!text.trim()) {
+
+    setStatus("NO TEXT TO READ.");
+
+    return;
+  }
+
+  const utterance =
+    new SpeechSynthesisUtterance(text);
+
+  const selectedVoice =
+    voices[voiceSelect.value];
+
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+  }
 
   utterance.rate =
     Number(rateSlider.value);
 
+  utterance.pitch = 1;
 
-  /*
-    Events
-  */
+  utterance.volume = 1;
 
   utterance.onstart = () => {
 
-    speaking = true;
+    isSpeaking = true;
 
     playBtn.textContent = "■";
 
-    updateStatus("READING...");
+    setStatus("READING PAGE...");
   };
-
 
   utterance.onend = () => {
 
-    speaking = false;
+    isSpeaking = false;
 
     playBtn.textContent = "▶";
 
-    updateStatus("DONE.");
+    setStatus("PAGE COMPLETE.");
   };
-
 
   utterance.onerror = () => {
 
-    speaking = false;
+    isSpeaking = false;
 
     playBtn.textContent = "▶";
 
-    updateStatus(
-      "SPEECH ERROR."
-    );
+    setStatus("SPEECH ERROR.");
   };
 
+  speechSynthesis.cancel();
 
-  synth.speak(utterance);
+  speechSynthesis.speak(utterance);
+});
+
+
+function stopSpeaking() {
+
+  if ("speechSynthesis" in window) {
+    speechSynthesis.cancel();
+  }
+
+  isSpeaking = false;
+
+  playBtn.textContent = "▶";
 }
 
 
-/* =========================================
-   PREVIOUS PAGE
-   ========================================= */
+/* -----------------------------
+   PAGE NAVIGATION
+----------------------------- */
 
-function previousPage() {
+prevBtn.addEventListener("click", () => {
 
   if (!pages.length) {
+    setStatus("NO PAGES.");
     return;
   }
 
+  stopSpeaking();
 
-  if (currentPage > 0) {
+  currentPage--;
 
-    synth.cancel();
-
-    speaking = false;
-
-    playBtn.textContent = "▶";
-
-    currentPage--;
-
-    displayCurrentPage();
-
-    updateStatus(
-      `PAGE ${currentPage + 1}`
-    );
+  if (currentPage < 0) {
+    currentPage = pages.length - 1;
   }
-}
+
+  updateDisplay();
+
+  setStatus(
+    `PAGE ${currentPage + 1} LOADED.`
+  );
+});
 
 
-/* =========================================
-   NEXT PAGE
-   ========================================= */
-
-function nextPage() {
+nextBtn.addEventListener("click", () => {
 
   if (!pages.length) {
+    setStatus("NO PAGES.");
     return;
   }
 
+  stopSpeaking();
 
-  if (currentPage < pages.length - 1) {
+  currentPage++;
 
-    synth.cancel();
+  if (currentPage >= pages.length) {
+    currentPage = 0;
+  }
 
-    speaking = false;
+  updateDisplay();
+
+  setStatus(
+    `PAGE ${currentPage + 1} LOADED.`
+  );
+});
+
+
+/* -----------------------------
+   SPEECH POSITION CONTROLS
+----------------------------- */
+
+previousWordBtn.addEventListener("click", () => {
+
+  setStatus("PREVIOUS SECTION.");
+
+  stopSpeaking();
+
+  if (pages.length) {
+    speakText(pages[currentPage].text);
+  }
+});
+
+
+nextWordBtn.addEventListener("click", () => {
+
+  setStatus("NEXT SECTION.");
+
+  stopSpeaking();
+
+  if (pages.length) {
+    speakText(pages[currentPage].text);
+  }
+});
+
+
+function speakText(text) {
+
+  if (!("speechSynthesis" in window)) {
+    return;
+  }
+
+  const utterance =
+    new SpeechSynthesisUtterance(text);
+
+  const selectedVoice =
+    voices[voiceSelect.value];
+
+  if (selectedVoice) {
+    utterance.voice = selectedVoice;
+  }
+
+  utterance.rate =
+    Number(rateSlider.value);
+
+  speechSynthesis.speak(utterance);
+
+  isSpeaking = true;
+
+  playBtn.textContent = "■";
+
+  utterance.onend = () => {
+
+    isSpeaking = false;
 
     playBtn.textContent = "▶";
-
-    currentPage++;
-
-    displayCurrentPage();
-
-    updateStatus(
-      `PAGE ${currentPage + 1}`
-    );
-  }
+  };
 }
 
 
-/* =========================================
+/* -----------------------------
+   SPEED
+----------------------------- */
+
+rateSlider.addEventListener("input", () => {
+
+  const value =
+    Number(rateSlider.value);
+
+  rateValue.textContent =
+    `${value.toFixed(2)}x`;
+
+  if (isSpeaking) {
+
+    speechSynthesis.cancel();
+
+    setStatus("SPEED CHANGED.");
+  }
+});
+
+
+/* -----------------------------
    CLEAR
-   ========================================= */
+----------------------------- */
 
-function clearPages() {
+clearBtn.addEventListener("click", () => {
 
-  synth.cancel();
+  if (!pages.length) {
 
-  speaking = false;
+    setStatus("INVENTORY ALREADY EMPTY.");
+
+    return;
+  }
+
+  stopSpeaking();
+
+  const confirmed =
+    confirm("CLEAR ALL PAGES?");
+
+  if (!confirmed) {
+    return;
+  }
+
+  pages.forEach(page => {
+
+    if (page.image) {
+      URL.revokeObjectURL(page.image);
+    }
+  });
 
   pages = [];
 
   currentPage = 0;
 
-  playBtn.textContent = "▶";
-
-  updatePageCounter();
-
-  displayCurrentPage();
-
-  updateStatus("CLEARED.");
-
   setProgress(0);
+
+  setStatus("INVENTORY CLEARED.");
+
+  updateDisplay();
+});
+
+
+/* -----------------------------
+   STATUS
+----------------------------- */
+
+function setStatus(message) {
+
+  statusLine.textContent =
+    message.toUpperCase();
 }
 
-
-/* =========================================
-   OCR PROGRESS
-   ========================================= */
 
 function setProgress(value) {
 
   const safeValue =
-    Math.max(
-      0,
-      Math.min(100, value)
-    );
+    Math.max(0, Math.min(100, value));
 
-
-  progressFill.style.width =
+  ocrProgress.style.width =
     `${safeValue}%`;
 
-
-  progressText.textContent =
-    `${Math.round(safeValue)}%`;
+  ocrPercent.textContent =
+    `${safeValue}%`;
 }
 
 
-/* =========================================
-   START
-   ========================================= */
+/* -----------------------------
+   KEYBOARD CONTROLS
+----------------------------- */
 
-init();
+document.addEventListener("keydown", event => {
+
+  if (event.code === "Space") {
+
+    event.preventDefault();
+
+    playBtn.click();
+  }
+
+  if (event.code === "ArrowLeft") {
+
+    prevBtn.click();
+  }
+
+  if (event.code === "ArrowRight") {
+
+    nextBtn.click();
+  }
+
+  if (event.key.toLowerCase() === "s") {
+
+    scanBtn.click();
+  }
+});
