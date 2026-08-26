@@ -1,264 +1,703 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
+/* =========================================
+   PAGE READER
+   GAME BOY / GAME GEAR STYLE
+   ========================================= */
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-  >
+:root {
+  --shell: #3f4630;
+  --shell-dark: #262b20;
 
-  <title>PAGE READER</title>
+  --screen-dark: #0f380f;
+  --screen-mid: #306230;
+  --screen-light: #8bac0f;
+  --screen-bright: #9bbc0f;
 
-  <meta name="theme-color" content="#9bbc0f">
+  --ink: #071507;
+  --pixel-white: #c4d98b;
 
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="icon" href="icons/icon-192.png">
+  --border: #172411;
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap"
-    rel="stylesheet"
-  >
+  --shadow:
+    0 6px 0 #172411,
+    inset 0 0 0 3px #879b55,
+    inset 0 0 0 6px #25331c;
 
-  <link rel="stylesheet" href="style.css">
-</head>
+  --pixel-font: "Press Start 2P", monospace;
+  --terminal-font: "VT323", monospace;
+}
 
-<body>
 
-  <div class="console">
+/* RESET */
 
-    <!-- TOP BAR -->
-    <header class="topbar">
-      <div class="battery">
-        <span class="battery-dot"></span>
-        BATTERY
-      </div>
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
 
-      <div class="logo">
-        PAGE READER
-      </div>
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
 
-      <div class="topbar-line"></div>
-    </header>
+body {
+  background:
+    radial-gradient(
+      circle at center,
+      #43533c 0%,
+      #20271f 55%,
+      #0d100d 100%
+    );
 
+  color: var(--pixel-white);
 
-    <!-- MAIN DISPLAY -->
-    <main class="screen">
+  font-family: var(--pixel-font);
 
-      <!-- LEFT PANEL -->
-      <aside class="side-panel">
+  display: flex;
+  justify-content: center;
+  align-items: center;
 
-        <section class="panel-box">
-          <div class="panel-title">PAGES</div>
+  padding: 20px;
+}
 
-          <div class="counter">
-            <span id="pageCount">00</span>
-            <span class="slash">/</span>
-            <span id="pageTotal">10</span>
-          </div>
 
-          <div class="counter-label">
-            PAGES SCANNED
-          </div>
-        </section>
+/* =========================================
+   CONSOLE
+   ========================================= */
 
+.console {
+  width: 100%;
+  max-width: 1100px;
 
-        <section class="scan-box">
+  background:
+    linear-gradient(
+      145deg,
+      #626b4d,
+      #3e4632 45%,
+      #2b3025
+    );
 
-          <div class="camera-icon">●</div>
+  border: 8px solid var(--shell-dark);
 
-          <div id="emptyState" class="empty-state">
-            NO PAGES YET.
-            <br><br>
-            TAP SCAN PAGE
-            <br>
-            TO READ A PAGE.
-          </div>
+  border-radius: 24px;
 
-        </section>
+  padding: 18px;
 
-      </aside>
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.7),
+    inset 0 0 0 3px #89946a,
+    inset 0 0 0 7px #252b20;
+}
 
 
-      <!-- CENTER OCR DISPLAY -->
-      <section class="reader">
+/* =========================================
+   TOP BAR
+   ========================================= */
 
-        <div class="reader-header">
-          <span>TEXT BUFFER</span>
-          <span id="scanStatus">READY</span>
-        </div>
+.topbar {
+  position: relative;
 
-        <div id="filmstrip" class="text-display">
-          <div class="placeholder">
-            READY_
-          </div>
-        </div>
+  height: 58px;
 
-      </section>
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 
+  border-bottom: 5px solid var(--border);
 
-      <!-- RIGHT PANEL -->
-      <aside class="controls">
+  margin-bottom: 14px;
+}
 
-        <section class="panel-box">
+.battery {
+  font-size: 9px;
+  letter-spacing: 1px;
+}
 
-          <div class="panel-title">
-            VOICE
-          </div>
+.battery-dot {
+  display: inline-block;
 
-          <select id="voiceSelect">
-            <option>Loading...</option>
-          </select>
+  width: 9px;
+  height: 9px;
 
-        </section>
+  margin-right: 7px;
 
+  background: #111;
 
-        <section class="panel-box">
+  border-radius: 50%;
+}
 
-          <div class="panel-title">
-            SPEED
-          </div>
+.logo {
+  position: absolute;
 
-          <div class="speed-control">
+  left: 50%;
+  transform: translateX(-50%);
 
-            <input
-              type="range"
-              id="rateSlider"
-              min="0.75"
-              max="1.5"
-              step="0.05"
-              value="1"
-            >
+  font-size: clamp(14px, 3vw, 24px);
 
-            <div id="rateValue">
-              1.00x
-            </div>
+  letter-spacing: 2px;
 
-          </div>
+  color: var(--screen-dark);
 
-        </section>
+  text-shadow:
+    1px 1px 0 #a8bb75;
+}
 
+.topbar-line {
+  position: absolute;
 
-        <section class="panel-box status-box">
+  bottom: -9px;
+  left: 0;
+  right: 0;
 
-          <div class="panel-title">
-            STATUS
-          </div>
+  height: 2px;
 
-          <div id="statusLine">
-            READY.
-          </div>
+  background: #829254;
+}
 
-        </section>
 
-      </aside>
+/* =========================================
+   MAIN DISPLAY
+   ========================================= */
 
-    </main>
+.screen {
+  display: grid;
 
+  grid-template-columns: 210px 1fr 210px;
 
-    <!-- BOTTOM CONTROLS -->
-    <footer class="controls-bar">
+  gap: 14px;
+}
 
-      <!-- CAMERA INPUT -->
-      <input
-        type="file"
-        id="cameraInput"
-        accept="image/*"
-        capture="environment"
-        hidden
-      >
 
-      <button id="scanBtn" class="big-button">
-        <span class="button-icon">●</span>
-        SCAN PAGE
-      </button>
+/* =========================================
+   PANELS
+   ========================================= */
 
+.panel-box,
+.scan-box,
+.reader {
+  background: var(--screen-light);
 
-      <button
-        id="prevBtn"
-        class="control-button"
-        aria-label="Previous page"
-      >
-        ◀◀
-      </button>
+  color: var(--ink);
 
+  border: 4px solid var(--screen-dark);
 
-      <button
-        id="backBtn"
-        class="control-button"
-        aria-label="Previous text"
-      >
-        ◀
-      </button>
+  box-shadow:
+    inset 0 0 0 2px #d0df91,
+    inset 0 0 0 5px var(--screen-mid);
+}
 
 
-      <button
-        id="playBtn"
-        class="play-button"
-        aria-label="Play"
-      >
-        ▶
-      </button>
+/* =========================================
+   PANEL BOX
+   ========================================= */
 
+.panel-box {
+  margin-bottom: 14px;
 
-      <button
-        id="nextBtn"
-        class="control-button"
-        aria-label="Next page"
-      >
-        ▶
-      </button>
+  min-height: 110px;
 
+  padding: 12px;
+}
 
-      <button
-        id="nextPageBtn"
-        class="control-button"
-        aria-label="Next page"
-      >
-        ▶▶
-      </button>
+.panel-title {
+  background: var(--screen-dark);
 
+  color: var(--screen-light);
 
-      <button
-        id="clearBtn"
-        class="big-button clear-button"
-      >
-        CLEAR
-      </button>
+  padding: 8px;
 
-    </footer>
+  margin: -12px -12px 12px;
 
+  font-size: 10px;
 
-    <!-- OCR PROGRESS -->
-    <div class="progress-wrap">
+  letter-spacing: 1px;
+}
 
-      <div class="progress-label">
-        <span>OCR</span>
-        <span id="progressText">0%</span>
-      </div>
 
-      <div class="progress-bar">
-        <div id="progressFill"></div>
-      </div>
+/* =========================================
+   PAGE COUNTER
+   ========================================= */
 
-    </div>
+.counter {
+  text-align: center;
 
+  font-family: var(--terminal-font);
 
-    <!-- FOOTER -->
-    <div class="footer-text">
-      RETRO TECH. MODERN POWER. PAGE BY PAGE.
-    </div>
+  font-size: 36px;
 
-  </div>
+  font-weight: bold;
 
+  margin-top: 12px;
+}
 
-  <!-- TESSERACT OCR -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+.slash {
+  opacity: 0.6;
+}
 
-  <!-- YOUR APP -->
-  <script src="app.js"></script>
+.counter-label {
+  text-align: center;
 
-</body>
-</html>
+  font-size: 8px;
+
+  margin-top: 7px;
+
+  line-height: 1.5;
+}
+
+
+/* =========================================
+   SCAN BOX
+   ========================================= */
+
+.scan-box {
+  min-height: 270px;
+
+  padding: 20px;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+  align-items: center;
+
+  text-align: center;
+}
+
+.camera-icon {
+  font-family: var(--terminal-font);
+
+  font-size: 50px;
+
+  margin-bottom: 20px;
+}
+
+.empty-state {
+  font-size: 9px;
+
+  line-height: 1.8;
+}
+
+
+/* =========================================
+   READER
+   ========================================= */
+
+.reader {
+  min-height: 394px;
+
+  background: var(--screen-light);
+
+  overflow: hidden;
+}
+
+.reader-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  background: var(--screen-dark);
+
+  color: var(--screen-light);
+
+  padding: 10px;
+
+  font-size: 9px;
+}
+
+.text-display {
+  height: calc(100% - 38px);
+
+  padding: 20px;
+
+  overflow-y: auto;
+
+  font-family: var(--terminal-font);
+
+  font-size: 23px;
+
+  line-height: 1.15;
+
+  white-space: pre-wrap;
+
+  word-wrap: break-word;
+
+  color: var(--screen-dark);
+}
+
+.placeholder {
+  opacity: 0.55;
+
+  animation: blink 1s steps(2, start) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.1;
+  }
+}
+
+
+/* =========================================
+   VOICE SELECT
+   ========================================= */
+
+select {
+  width: 100%;
+
+  background: var(--screen-light);
+
+  color: var(--screen-dark);
+
+  border: 3px solid var(--screen-dark);
+
+  border-radius: 0;
+
+  padding: 9px;
+
+  font-family: var(--pixel-font);
+
+  font-size: 8px;
+
+  outline: none;
+}
+
+
+/* =========================================
+   SPEED
+   ========================================= */
+
+.speed-control {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 10px;
+}
+
+#rateSlider {
+  width: 100%;
+
+  appearance: none;
+
+  height: 9px;
+
+  background: var(--screen-dark);
+
+  border: 2px solid var(--screen-dark);
+}
+
+#rateSlider::-webkit-slider-thumb {
+  appearance: none;
+
+  width: 22px;
+  height: 22px;
+
+  background: var(--screen-light);
+
+  border: 3px solid var(--screen-dark);
+
+  border-radius: 50%;
+}
+
+#rateSlider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+
+  background: var(--screen-light);
+
+  border: 3px solid var(--screen-dark);
+
+  border-radius: 50%;
+}
+
+#rateValue {
+  text-align: center;
+
+  font-family: var(--terminal-font);
+
+  font-size: 22px;
+}
+
+
+/* =========================================
+   STATUS
+   ========================================= */
+
+.status-box {
+  min-height: 105px;
+}
+
+#statusLine {
+  font-family: var(--terminal-font);
+
+  font-size: 20px;
+
+  line-height: 1.1;
+}
+
+
+/* =========================================
+   BOTTOM CONTROLS
+   ========================================= */
+
+.controls-bar {
+  display: grid;
+
+  grid-template-columns:
+    1.5fr
+    0.7fr
+    0.7fr
+    1fr
+    0.7fr
+    0.7fr
+    1.5fr;
+
+  gap: 12px;
+
+  margin-top: 18px;
+}
+
+
+/* =========================================
+   BUTTONS
+   ========================================= */
+
+button {
+  font-family: var(--pixel-font);
+
+  cursor: pointer;
+
+  border: 4px solid var(--border);
+
+  background: #84964e;
+
+  color: var(--screen-dark);
+
+  min-height: 62px;
+
+  box-shadow:
+    inset 0 0 0 2px #b6c77b,
+    0 5px 0 #182016;
+
+  transition:
+    transform 0.05s,
+    box-shadow 0.05s;
+}
+
+button:hover {
+  background: #a1b761;
+}
+
+button:active {
+  transform: translateY(5px);
+
+  box-shadow:
+    inset 0 0 0 2px #b6c77b;
+}
+
+.big-button {
+  font-size: 9px;
+
+  letter-spacing: 0.5px;
+}
+
+.button-icon {
+  display: block;
+
+  font-family: var(--terminal-font);
+
+  font-size: 30px;
+
+  line-height: 24px;
+
+  margin-bottom: 4px;
+}
+
+.control-button {
+  font-size: 13px;
+}
+
+.play-button {
+  min-height: 74px;
+
+  font-size: 22px;
+
+  background: #9daf61;
+}
+
+.clear-button {
+  background: #68753f;
+}
+
+
+/* =========================================
+   PROGRESS
+   ========================================= */
+
+.progress-wrap {
+  margin-top: 18px;
+
+  background: var(--screen-dark);
+
+  border: 3px solid var(--border);
+
+  padding: 8px;
+}
+
+.progress-label {
+  display: flex;
+
+  justify-content: space-between;
+
+  font-size: 8px;
+
+  margin-bottom: 6px;
+}
+
+.progress-bar {
+  height: 13px;
+
+  background: #20351d;
+
+  border: 2px solid #0a160a;
+}
+
+#progressFill {
+  height: 100%;
+
+  width: 0%;
+
+  background: var(--screen-light);
+
+  transition: width 0.15s linear;
+}
+
+
+/* =========================================
+   FOOTER
+   ========================================= */
+
+.footer-text {
+  text-align: center;
+
+  font-family: var(--terminal-font);
+
+  font-size: 20px;
+
+  margin-top: 13px;
+
+  color: #a4b875;
+}
+
+
+/* =========================================
+   MOBILE
+   ========================================= */
+
+@media (max-width: 850px) {
+
+  body {
+    padding: 8px;
+    align-items: flex-start;
+  }
+
+  .console {
+    padding: 10px;
+
+    border-width: 5px;
+
+    border-radius: 18px;
+  }
+
+  .topbar {
+    height: 48px;
+  }
+
+  .logo {
+    font-size: 13px;
+  }
+
+  .screen {
+    grid-template-columns: 1fr;
+
+    gap: 10px;
+  }
+
+  .reader {
+    order: -1;
+
+    min-height: 330px;
+  }
+
+  .text-display {
+    font-size: 21px;
+  }
+
+  .scan-box {
+    min-height: 150px;
+  }
+
+  .controls-bar {
+    grid-template-columns:
+      1fr 1fr 1fr;
+
+    gap: 9px;
+  }
+
+  .big-button {
+    min-height: 62px;
+  }
+
+  .clear-button {
+    grid-column: span 1;
+  }
+
+  .footer-text {
+    font-size: 15px;
+  }
+}
+
+
+/* =========================================
+   VERY SMALL PHONES
+   ========================================= */
+
+@media (max-width: 430px) {
+
+  body {
+    padding: 4px;
+  }
+
+  .console {
+    padding: 8px;
+  }
+
+  .logo {
+    font-size: 11px;
+  }
+
+  .battery {
+    font-size: 7px;
+  }
+
+  .reader {
+    min-height: 300px;
+  }
+
+  .text-display {
+    font-size: 19px;
+  }
+
+  button {
+    min-height: 58px;
+  }
+
+  .control-button {
+    font-size: 10px;
+  }
+
+  .footer-text {
+    font-size: 12px;
+  }
+}
+
